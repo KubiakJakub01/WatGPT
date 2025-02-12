@@ -1,3 +1,5 @@
+# # read_calendar_pdf.py
+
 import fitz  # PyMuPDF
 import re
 import pandas as pd
@@ -81,40 +83,49 @@ def classify_spans(df: pd.DataFrame) -> pd.DataFrame:
     df["tag"] = tags
     return df
 
-def build_heading_blocks(df: pd.DataFrame) -> list[tuple[str, list[dict]]]:
+def build_heading_blocks(df: pd.DataFrame) -> list[tuple[str, int, list[dict]]]:
     """
     Sort spans top-to-bottom and group them under headings.
-    Instead of storing only text, we store a list of records,
-    each with 'text', 'font_size', 'is_bold', 'is_upper', etc.
+    We'll store:
+      (heading_text, min_page_in_block, [span_records]).
     """
     df_sorted = df.sort_values(by=["page", "ymin"]).reset_index(drop=True)
 
     heading_blocks = []
     current_heading = "UNDEFINED_HEADING"
-    current_body = []  # will store a list of dicts (one per span)
+    current_body = []  # store a list of dicts (one per span)
+    current_body_pages = []  # track pages for the current block
 
     for _, row in df_sorted.iterrows():
         tag = row["tag"]
-        # We'll build a small dictionary for each span
+        # Build a small dictionary for each span
         record = {
             "text": row["text"],
+            "page": row["page"],         # <--- store page here
             "font_size": row["font_size"],
             "is_bold": row["is_bold"],
             "is_upper": row["is_upper"],
         }
 
         if tag == "h":
-            # store old heading+body if we have any
+            # finalize the previous heading block if we have any
             if current_body:
-                heading_blocks.append((current_heading, current_body))
+                min_page = min(current_body_pages)
+                heading_blocks.append((current_heading, min_page, current_body))
+                # reset for the next block
                 current_body = []
+                current_body_pages = []
+
             current_heading = row["text"]
         else:
             # p or s => accumulate in current_body
             current_body.append(record)
+            current_body_pages.append(row["page"])
 
+    # finalize the last block if it exists
     if current_body:
-        heading_blocks.append((current_heading, current_body))
+        min_page = min(current_body_pages)
+        heading_blocks.append((current_heading, min_page, current_body))
 
     return heading_blocks
 
@@ -141,59 +152,40 @@ def chunk_text_by_sentence(text: str, chunk_size=1500, overlap_sentences=1) -> l
     return chunks
 
 def build_docs_from_blocks(
-    heading_blocks: list[tuple[str, list[dict]]],
+    heading_blocks: list[tuple[str, int, list[dict]]],
     chunk_size=1500,
     overlap_sentences=1
 ) -> list[Document]:
     """
-    Turn (heading, list_of_span_records) into chunked Documents.
+    Turn (heading, min_page, list_of_span_records) into chunked Documents.
     Each Document's .page_content is combined text from those spans,
-    and the metadata includes the heading plus a summary of spans 
-    (font_size, is_bold, is_upper).
+    and we store 'heading' and 'page_number' in .metadata.
     """
     docs = []
 
-    for heading, span_records in heading_blocks:
-        # Combine all text from this heading-block into one string
+    for heading, min_page, span_records in heading_blocks:
+        # Combine all text in this block
         full_text = " ".join(r["text"] for r in span_records)
 
         # If the block is too large, chunk it further
         if len(full_text) > chunk_size:
             sub_chunks = chunk_text_by_sentence(full_text, chunk_size, overlap_sentences)
-            # For each sub-chunk, let's gather its relevant span metadata
             for sc in sub_chunks:
                 doc = Document(
                     page_content=sc,
                     metadata={
                         "heading": heading,
-                        # Example: store entire block's metadata or subset
-                        # "span_info": [
-                        #     {
-                        #         "font_size": r["font_size"],
-                        #         "is_bold": r["is_bold"],
-                        #         "is_upper": r["is_upper"],
-                        #         "text": r["text"]
-                        #     }
-                        #     for r in span_records
-                        # ]
+                        "page_number": min_page  # <--- store earliest page
                     }
                 )
                 docs.append(doc)
         else:
-            # If the text is short enough, just 1 chunk
+            # If short enough, just 1 chunk
             doc = Document(
                 page_content=full_text,
                 metadata={
                     "heading": heading,
-                    # "span_info": [
-                    #     {
-                    #         "font_size": r["font_size"],
-                    #         "is_bold": r["is_bold"],
-                    #         "is_upper": r["is_upper"],
-                    #         "text": r["text"]
-                    #     }
-                    #     for r in span_records
-                    # ]
+                    "page_number": min_page
                 }
             )
             docs.append(doc)
@@ -225,26 +217,46 @@ def save_docs_to_txt(docs: list[Document], output_file: str):
             #         )
             f.write("\n")
 
-if __name__ == "__main__":
-    pdf_path = r"C:\projekt-chatbot-wat\WatGPT\wat_data\informator_dla_studentow_1_roku_2024.pdf"
-    output_file = r"C:\projekt-chatbot-wat\WatGPT\output_data\output_chunks.txt"
-
-    # 1) Extract all spans into DataFrame
+def extract_pdf_to_docs(pdf_path: str) -> list[Document]:
     df_spans = extract_spans_to_df(pdf_path)
-
-    # 2) Classify them as heading 'h', paragraph 'p', or smaller 's'
     df_tagged = classify_spans(df_spans)
-
-    # 3) Group them by heading blocks
     heading_blocks = build_heading_blocks(df_tagged)
-
-    # 4) Build Documents, chunking if needed
     docs = build_docs_from_blocks(heading_blocks, chunk_size=1500, overlap_sentences=0)
     docs = filter_out_numeric_chunks(docs)
+    return docs
 
-    # 5) Save to .txt
-    save_docs_to_txt(docs, output_file)
-    print(f"Saved {len(docs)} chunks to {output_file}")
+
+def extract_pdf_records(pdf_path: str) -> list[dict]:
+    """
+    1) Extract text blocks as Documents (which now have 'page_number' in metadata).
+    2) Convert them into a list of dicts for the DB:
+       (chunk_id, heading, content, source_file, page_number, created_at).
+    """
+    docs = extract_pdf_to_docs(pdf_path)  # This calls build_docs_from_blocks, etc.
+    records = []
+    for doc in docs:
+        record = {
+            "chunk_id": None,
+            "heading": doc.metadata.get("heading", "NONE"),
+            "content": doc.page_content,
+            "source_file": pdf_path,
+            "page_number": doc.metadata.get("page_number"),  # <--- now we have it
+            "created_at": None
+        }
+        records.append(record)
+    return records
+
+if __name__ == "__main__":
+    test_path = r"C:\watGPT_project\WatGPT-text_extraction\wat_data\informator_dla_studentow_1_roku_2024.pdf"
+    
+    # Instead of returning docs, call the new function:
+    records = extract_pdf_records(test_path)
+    print(f"Extracted {len(records)} DB records from {test_path}")
+    
+    # Print them if you want to see the exact output
+    # (They’ll look like the ones in your first script.)
+    for i, rec in enumerate(records[:5], start=1):
+        print(f"Record {i}: {rec}")
 
 
 #r"C:\\chatWAT\\Data\\informator_dla_studentow_1_roku_2024.pdf"

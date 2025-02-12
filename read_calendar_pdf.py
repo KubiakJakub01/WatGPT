@@ -1,10 +1,10 @@
+# read_calendar_pdf.py
+
 import fitz
 import re
 import string
 from langchain.docstore.document import Document
 
-# A quick regex to detect something like DD.MM.YYYY
-# (and optionally the trailing " r." or " r" etc.)
 DATE_PATTERN = re.compile(r"^\d{1,2}\.\d{1,2}\.\d{4}(\s*r\.?)?$")
 
 def extract_header_and_rows(pdf_path: str, debug_file: str = None):
@@ -38,7 +38,6 @@ def extract_header_and_rows(pdf_path: str, debug_file: str = None):
         page_rows = parse_page_into_rows(page, debug_handle)
         all_rows.extend(page_rows)
 
-    # 3) Merge multi-line rows (where next row starts with digit/lowercase)
     merged = merge_multiline_rows(all_rows)
 
     if debug_handle:
@@ -73,17 +72,6 @@ def detect_header(page, min_font_size=12):
     return None
 
 def parse_page_into_rows(page, debug_handle=None, row_diff_threshold=12, x_split=140):
-    """
-    Reads all spans (x0, y0, text) from the page, sorts them by y (top->bottom),
-    then groups them into rows whenever (current_y - last_y) >= row_diff_threshold.
-
-    Then each row is split into 2 columns:
-      - Left column (x < x_split)
-      - Right column (x >= x_split)
-    We sort each column by (y0, x0), combine them into strings, then join with ' | '.
-
-    Returns: a list of row_text strings for this page.
-    """
     page_number = page.number
     blocks = page.get_text("dict")["blocks"]
     spans = []
@@ -98,15 +86,12 @@ def parse_page_into_rows(page, debug_handle=None, row_diff_threshold=12, x_split
                         y0 = span["bbox"][1]
                         spans.append((x0, y0, text))
 
-    # Sort spans top->bottom, left->right
+    # (Unchanged) Sort spans top->bottom, left->right
     spans.sort(key=lambda x: (x[1], x[0]))
 
     if debug_handle:
         debug_handle.write(f"--- Page {page_number} ---\n")
-        debug_handle.write("Extracted spans (x0, y0, text):\n")
-        for (x0, y0, txt) in spans:
-            debug_handle.write(f"  x0={x0:.1f}, y0={y0:.1f}, text='{txt}'\n")
-        debug_handle.write("\nRow grouping with row_diff_threshold=12:\n")
+        ...
 
     rows_of_spans = []
     current_row = []
@@ -120,16 +105,13 @@ def parse_page_into_rows(page, debug_handle=None, row_diff_threshold=12, x_split
         else:
             # check if new row
             if (y0 - last_y) >= row_diff_threshold:
-                # finalize current_row
                 rows_of_spans.append(current_row)
                 if debug_handle:
                     debug_handle.write(f" Finalized row => {current_row}\n")
                 current_row = [(x0, y0, text)]
                 last_y = y0
             else:
-                # same row
                 current_row.append((x0, y0, text))
-                # We'll do max so row extends as far down as we go
                 last_y = max(last_y, y0)
 
     if current_row:
@@ -137,11 +119,14 @@ def parse_page_into_rows(page, debug_handle=None, row_diff_threshold=12, x_split
         if debug_handle:
             debug_handle.write(f" Finalized row => {current_row}\n")
 
-    # Convert each list of spans into a single string by splitting into columns
-    row_strings = []
+    # Convert each list of spans -> single "row text" + store page_number
+    row_dicts = []
     for row_spans in rows_of_spans:
         row_text = finalize_row_columns(row_spans, x_split)
-        row_strings.append(row_text)
+        row_dicts.append({
+            "page_number": page_number,  # <--- store the page index
+            "text": row_text
+        })
         if debug_handle:
             debug_handle.write(f" Row => {row_spans}\n")
             debug_handle.write(f"  => row_text='{row_text}'\n\n")
@@ -149,7 +134,7 @@ def parse_page_into_rows(page, debug_handle=None, row_diff_threshold=12, x_split
     if debug_handle:
         debug_handle.write("\n")
 
-    return row_strings
+    return row_dicts
 
 def finalize_row_columns(row_spans, x_split=100):
     """
@@ -211,56 +196,67 @@ def is_continuation(row: list[str]) -> bool:
     # If first_char is a digit or a lowercase letter
     return first_char.isdigit() or (first_char in string.ascii_lowercase)
 
-def merge_multiline_rows(rows: list[str]) -> list[str]:
+def merge_multiline_rows(rows: list[dict]) -> list[dict]:
     """
-    If the next row starts with digit/lowercase in its first cell,
-    append that row's entire text to the previous row.
-    NOTE: Each 'row' is now a single string like "LeftText | RightText".
-          We'll consider the 'first cell' as just the text before the first space
-          or up to the first '|'?
+    If the next row's text starts with a digit/lowercase,
+    append that text to the previous row's text.
+    We'll store the earliest page_number for the merged chunk.
     """
     merged_rows = []
-    for r in rows:
+    for row in rows:
+        text = row["text"]
+        page_num = row["page_number"]
+
         if not merged_rows:
-            merged_rows.append(r)
+            merged_rows.append(row)
         else:
-            # parse out left side
-            left_side = r.split("|", 1)[0].strip()  # text before the first '|'
+            left_side = text.split("|", 1)[0].strip()
             if left_side and is_continuation([left_side]):
-                # merge with previous
-                merged_rows[-1] += " " + r
+                merged_rows[-1]["text"] += " " + text
             else:
-                merged_rows.append(r)
+                merged_rows.append(row)
     return merged_rows
 
-def build_table_chunks(header_text, rows, chunk_size=5):
+def build_table_chunks(header_text, rows: list[dict], chunk_size=5):
     """
-    Takes a list of row strings, groups them into chunks of size=5,
-    returns a list of Documents with metadata = header_text.
+    Now `rows` is a list of dicts: {"page_number": int, "text": str}
+    We group them into chunks of size=5, build Documents with
+    metadata = { "header": header_text, "page_number": earliest_of_chunk }
     """
     docs = []
     current_batch = []
-    for row_text in rows:
-        current_batch.append(row_text)
+    for row in rows:
+        current_batch.append(row)
         if len(current_batch) == chunk_size:
             doc = create_doc_from_rows(header_text, current_batch)
             docs.append(doc)
             current_batch = []
+
     # leftover
     if current_batch:
         doc = create_doc_from_rows(header_text, current_batch)
         docs.append(doc)
+
     return docs
 
-def create_doc_from_rows(header_text, row_batch):
+def create_doc_from_rows(header_text, row_batch: list[dict]) -> Document:
     """
-    row_batch is a list of row strings, e.g. ["LeftCol1 | RightCol1", "LeftCol2 | RightCol2"]
-    We'll combine them with newlines.
+    row_batch is a list of dicts: [{"page_number": X, "text": "..."}]
+    We'll combine all "text" with newlines, and pick the earliest page_number.
     """
-    chunk_text = "\n".join(row_batch)
+    pages = [r["page_number"] for r in row_batch]
+    earliest_page = min(pages) if pages else None
+
+    # Combine the texts
+    combined_texts = [r["text"] for r in row_batch]
+    chunk_text = "\n".join(combined_texts)
+
     return Document(
         page_content=chunk_text,
-        metadata={"header": header_text}
+        metadata={
+            "header": header_text,
+            "page_number": earliest_page
+        }
     )
 
 def save_docs_to_txt(docs: list[Document], output_file: str):
@@ -271,14 +267,54 @@ def save_docs_to_txt(docs: list[Document], output_file: str):
             f.write(f"HEADING: {heading}\n")
             f.write(f"CONTENT:\n{doc.page_content}\n\n")
 
+def extract_pdf_records(pdf_path: str, debug_file: str = None) -> list[dict]:
+    """
+    1) Extract the header and parse row dicts (with page_number, text).
+    2) Merge multiline.
+    3) Build chunked Documents, each with earliest page in metadata.
+    4) Convert each Document into DB-friendly dict.
+    """
+    # 1) Extract
+    header_text, row_dicts = extract_header_and_rows(pdf_path, debug_file=debug_file)  
+    # Now row_dicts is a list of {"page_number": int, "text": "..."}
+    
+    # 2) Merge
+    merged = merge_multiline_rows(row_dicts)
+    
+    # 3) Build docs
+    docs = build_table_chunks(header_text, merged, chunk_size=5)
+    
+    # 4) Convert each Document to a DB-friendly dict
+    records = []
+    for doc in docs:
+        record = {
+            "chunk_id": None,
+            "heading": doc.metadata.get("header", "NONE"),
+            "content": doc.page_content,
+            "source_file": pdf_path,
+            "page_number": doc.metadata.get("page_number"),  # <--- now we have it
+            "created_at": None
+        }
+        records.append(record)
+    
+    return records
+
 if __name__ == "__main__":
-    pdf_path = r"C:\projekt-chatbot-wat\WatGPT\wat_data\zal._nr_3_organizacja_zajec_w_roku_akademickim_2024_2025_na_jednolitych_studiach_magisterskich.pdf"
-    output_file = r"C:\projekt-chatbot-wat\WatGPT\output_data\dates_output_chunks.txt"
+    pdf_path = r"C:\watGPT_project\WatGPT-text_extraction\wat_data\zal._nr_1_organizacja_zajec_w_roku_akademickim_2024_2025_na_studiach_stacjonarnych.pdf"
     debug_log_path = r"C:\projekt-chatbot-wat\WatGPT\output_data\debug_log.txt"
 
-    header_text, row_texts = extract_header_and_rows(pdf_path, debug_file=debug_log_path)
-    docs = build_table_chunks(header_text, row_texts, chunk_size=5)
-    save_docs_to_txt(docs, output_file)
+    # Now just call the new function that returns DB-friendly rows:
+    records = extract_pdf_records(pdf_path)
+    print(f"Extracted {len(records)} DB records from {pdf_path}")
+    print(f"records: {records}")
 
-    print(f"Saved {len(docs)} chunks to {output_file}")
-    print(f"Debug info saved to {debug_log_path}")
+    # Each record is a dict like:
+    # {
+    #   "chunk_id": None,
+    #   "heading": "...",
+    #   "content": "...",
+    #   "source_file": "...",
+    #   "page_number": None,
+    #   "created_at": None
+    # }
+
