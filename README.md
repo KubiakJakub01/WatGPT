@@ -10,7 +10,8 @@ CREATE TABLE pdf_chunks (
   chunk_id INTEGER PRIMARY KEY AUTOINCREMENT,  
   heading TEXT NOT NULL,  content TEXT NOT NULL,  
   source_file TEXT,  page_number INTEGER,  
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP );
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
+);
 ```
 Columns:
 - chunk_id: Auto-incrementing unique ID.
@@ -26,14 +27,16 @@ Columns:
 CREATE TABLE block_hours (  
   block_id TEXT PRIMARY KEY, -- e.g., "block1"  
   start_time TEXT NOT NULL, -- "08:00"  
-  end_time TEXT NOT NULL -- "09:35" );
+  end_time TEXT NOT NULL -- "09:35" 
+);
 ```
 
 2. groups: Student groups (e.g., "WCY24IV1N2").
 ```sql
 CREATE TABLE groups (  
   group_id INTEGER PRIMARY KEY AUTOINCREMENT,  
-  group_code TEXT NOT NULL UNIQUE );
+  group_code TEXT NOT NULL UNIQUE 
+);
 ```
 
 3. teachers: Instructor details.
@@ -41,7 +44,8 @@ CREATE TABLE groups (
 CREATE TABLE teachers (  
   teacher_id INTEGER PRIMARY KEY AUTOINCREMENT,  
   full_name TEXT NOT NULL, -- "Olejniczak Jarosław"  
-  short_code TEXT -- Optional abbreviation (e.g., "OJ") );
+  short_code TEXT -- Optional abbreviation (e.g., "OJ") 
+);
 ```
 
 4. courses: Course metadata.
@@ -49,7 +53,8 @@ CREATE TABLE teachers (
 CREATE TABLE courses (  
   course_id INTEGER PRIMARY KEY AUTOINCREMENT,  
   course_code TEXT NOT NULL, -- Short code (e.g., "MumII")  
-  course_name TEXT -- Full name (optional) );
+  course_name TEXT -- Full name (optional) 
+);
 ```
 
 5. lessons: Scheduled lessons linked to groups/teachers/courses.
@@ -64,7 +69,8 @@ CREATE TABLE lessons (
   room TEXT, -- "308"  
   building TEXT, -- "65"  
   info TEXT, -- Additional notes  
-  FOREIGN KEY (group_id) REFERENCES groups(group_id),  ... ); 
+  FOREIGN KEY (group_id) REFERENCES groups(group_id),  ... 
+); 
 ```
 
 
