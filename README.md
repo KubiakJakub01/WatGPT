@@ -6,7 +6,11 @@ The Military University of Technology in Warsaw chatbot
 ### pdf_chunks Table
 Stores text chunks extracted from PDFs. Schema (from db_utils.py):
 ```sql 
-CREATE TABLE pdf_chunks (  chunk_id INTEGER PRIMARY KEY AUTOINCREMENT,  heading TEXT NOT NULL,  content TEXT NOT NULL,  source_file TEXT,  page_number INTEGER,  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP );
+CREATE TABLE pdf_chunks (  
+  chunk_id INTEGER PRIMARY KEY AUTOINCREMENT,  
+  heading TEXT NOT NULL,  content TEXT NOT NULL,  
+  source_file TEXT,  page_number INTEGER,  
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP );
 ```
 Columns:
 - chunk_id: Auto-incrementing unique ID.
