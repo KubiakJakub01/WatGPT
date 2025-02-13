@@ -5,6 +5,8 @@ import re
 import string
 from langchain.docstore.document import Document
 
+# A quick regex to detect something like DD.MM.YYYY
+# (and optionally the trailing " r." or " r" etc.)
 DATE_PATTERN = re.compile(r"^\d{1,2}\.\d{1,2}\.\d{4}(\s*r\.?)?$")
 
 def extract_header_and_rows(pdf_path: str, debug_file: str = None):
@@ -38,6 +40,7 @@ def extract_header_and_rows(pdf_path: str, debug_file: str = None):
         page_rows = parse_page_into_rows(page, debug_handle)
         all_rows.extend(page_rows)
 
+    # 3) Merge multi-line rows (where next row starts with digit/lowercase)
     merged = merge_multiline_rows(all_rows)
 
     if debug_handle:
@@ -135,6 +138,7 @@ def parse_page_into_rows(page, debug_handle=None, row_diff_threshold=12, x_split
         debug_handle.write("\n")
 
     return row_dicts
+
 
 def finalize_row_columns(row_spans, x_split=100):
     """
@@ -298,6 +302,7 @@ def extract_pdf_records(pdf_path: str, debug_file: str = None) -> list[dict]:
         records.append(record)
     
     return records
+
 
 if __name__ == "__main__":
     pdf_path = r"C:\watGPT_project\WatGPT-text_extraction\wat_data\zal._nr_1_organizacja_zajec_w_roku_akademickim_2024_2025_na_studiach_stacjonarnych.pdf"
