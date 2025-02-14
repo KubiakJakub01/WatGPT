@@ -5,7 +5,14 @@ The Military University of Technology in Warsaw chatbot
 
 ### pdf_chunks Table
 Stores text chunks extracted from PDFs. Schema (from db_utils.py):
-sql CREATE TABLE pdf_chunks (  chunk_id INTEGER PRIMARY KEY AUTOINCREMENT,  heading TEXT NOT NULL,  content TEXT NOT NULL,  source_file TEXT,  page_number INTEGER,  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ); 
+```sql 
+CREATE TABLE pdf_chunks (  
+  chunk_id INTEGER PRIMARY KEY AUTOINCREMENT,  
+  heading TEXT NOT NULL,  content TEXT NOT NULL,  
+  source_file TEXT,  page_number INTEGER,  
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
+);
+```
 Columns:
 - chunk_id: Auto-incrementing unique ID.
 - heading: Title/section from PDF (e.g., "Academic Calendar").
@@ -17,27 +24,53 @@ Columns:
 ### Timetable Tables
 1. block_hours: Defines lecture block times (e.g., block1 = 08:00-09:35).
 ```sql 
-CREATE TABLE block_hours (  block_id TEXT PRIMARY KEY, -- e.g., "block1"  start_time TEXT NOT NULL, -- "08:00"  end_time TEXT NOT NULL -- "09:35" );
+CREATE TABLE block_hours (  
+  block_id TEXT PRIMARY KEY, -- e.g., "block1"  
+  start_time TEXT NOT NULL, -- "08:00"  
+  end_time TEXT NOT NULL -- "09:35" 
+);
 ```
 
 2. groups: Student groups (e.g., "WCY24IV1N2").
 ```sql
-CREATE TABLE groups (  group_id INTEGER PRIMARY KEY AUTOINCREMENT,  group_code TEXT NOT NULL UNIQUE );
+CREATE TABLE groups (  
+  group_id INTEGER PRIMARY KEY AUTOINCREMENT,  
+  group_code TEXT NOT NULL UNIQUE 
+);
 ```
 
 3. teachers: Instructor details.
 ```sql
-CREATE TABLE teachers (  teacher_id INTEGER PRIMARY KEY AUTOINCREMENT,  full_name TEXT NOT NULL, -- "Olejniczak Jarosław"  short_code TEXT -- Optional abbreviation (e.g., "OJ") );
+CREATE TABLE teachers (  
+  teacher_id INTEGER PRIMARY KEY AUTOINCREMENT,  
+  full_name TEXT NOT NULL, -- "Olejniczak Jarosław"  
+  short_code TEXT -- Optional abbreviation (e.g., "OJ") 
+);
 ```
 
 4. courses: Course metadata.
 ```sql
-CREATE TABLE courses (  course_id INTEGER PRIMARY KEY AUTOINCREMENT,  course_code TEXT NOT NULL, -- Short code (e.g., "MumII")  course_name TEXT -- Full name (optional) );
+CREATE TABLE courses (  
+  course_id INTEGER PRIMARY KEY AUTOINCREMENT,  
+  course_code TEXT NOT NULL, -- Short code (e.g., "MumII")  
+  course_name TEXT -- Full name (optional) 
+);
 ```
 
 5. lessons: Scheduled lessons linked to groups/teachers/courses.
 ```sql
-CREATE TABLE lessons (  lesson_id INTEGER PRIMARY KEY AUTOINCREMENT,  group_id INTEGER NOT NULL,  course_id INTEGER NOT NULL,  teacher_id INTEGER,  block_id TEXT NOT NULL, -- References block_hours  lesson_date TEXT NOT NULL, -- "YYYY-MM-DD" or "YYYY_MM_DD"  room TEXT, -- "308"  building TEXT, -- "65"  info TEXT, -- Additional notes  FOREIGN KEY (group_id) REFERENCES groups(group_id),  ... ); 
+CREATE TABLE lessons (  
+  lesson_id INTEGER PRIMARY KEY AUTOINCREMENT,  
+  group_id INTEGER NOT NULL,  
+  course_id INTEGER NOT NULL,  
+  teacher_id INTEGER,  
+  block_id TEXT NOT NULL, -- References block_hours  
+  lesson_date TEXT NOT NULL, -- "YYYY-MM-DD" or "YYYY_MM_DD"  
+  room TEXT, -- "308"  
+  building TEXT, -- "65"  
+  info TEXT, -- Additional notes  
+  FOREIGN KEY (group_id) REFERENCES groups(group_id),  ... 
+); 
 ```
 
 
@@ -68,7 +101,8 @@ Use SQLite CLI or a tool like DB Browser for SQLite:
 bash sqlite3 chunks.db 
 Example queries:
 ```sql
-SELECT * FROM pdf_chunks LIMIT 5; -- View first 5 PDF chunks SELECT * FROM lessons WHERE group_id = 1; -- Lessons for group_id=1 
+SELECT * FROM pdf_chunks LIMIT 5; 
+-- View first 5 PDF chunks SELECT * FROM lessons WHERE group_id = 1; -- Lessons for group_id=1 
 ```
 
 
