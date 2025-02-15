@@ -166,8 +166,8 @@ if __name__ == "__main__":
     EXCLUDE_URLS = [
         "https://www.wcy.wat.edu.pl/wydzial/aktualnosci/dzialalnosc-studencka"
     ]
-    DOWNLOAD_FOLDER = "downloaded_pdfs"
-    INFO_FILE = "scrape_info.txt"
+    DOWNLOAD_FOLDER = "output_data\downloaded_pdfs"
+    INFO_FILE = "output_data\scrape_info.txt"
 
     crawler = SiteCrawler(
         start_url=START_URL,
