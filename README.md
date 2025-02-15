@@ -1,6 +1,9 @@
 # WatGPT
 The Military University of Technology in Warsaw chatbot
 
+Current data sources for web scraping in excel:
+https://1drv.ms/x/c/82f573414933f60c/EVgTXJyG6LVMvUQtJyMjDxoBvfdNat9JczEBHSaQ3rHPPw
+
 ## Database Structure
 
 ### pdf_chunks Table
