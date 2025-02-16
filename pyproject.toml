@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "watgpt"
+version = "0.1.0"
+description = "The Military University of Technology in Warsaw chatbot"
+authors = [
+    "KubiakJakub01",
+    "LukaszKielczewski66",
+    "maciekSzubiczuk"
+]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
