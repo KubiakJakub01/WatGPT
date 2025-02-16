@@ -1,10 +1,8 @@
 import argparse
 from pathlib import Path
 
-from ..reader import extract_records_calendar, extract_records_structured
-from ..scraper import scrape_timetable
-from .constants import CALENDAR_PDF_FP, DATABASE_FILE, STRUCTURED_PDF_FP, TIMETABLE_URL
-from .db_utils import (
+from ..constants import CALENDAR_PDF_FP, DATABASE_FILE, STRUCTURED_PDF_FP, TIMETABLE_URL
+from ..db.db_utils import (
     create_connection,
     create_table_pdf_chunks,
     create_timetable_schema,
@@ -17,6 +15,8 @@ from .db_utils import (
     insert_lesson,
     insert_teacher,
 )
+from ..reader import extract_records_calendar, extract_records_structured
+from ..scraper import scrape_timetable
 
 
 def parse_args():
