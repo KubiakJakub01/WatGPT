@@ -1,5 +1,3 @@
-# timetable_scraper.py
-
 import re
 
 import requests
