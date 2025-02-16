@@ -1,5 +1,6 @@
 from pathlib import Path
 
+DATABASE_FILE = 'chunks.db'
 DATA_DIR_PATH = Path('wat_data')
 TIMETABLE_URL = 'https://planzajec.wcy.wat.edu.pl/pl/rozklad?grupa_id={group}'
 CALENDAR_PDF_FP = (
