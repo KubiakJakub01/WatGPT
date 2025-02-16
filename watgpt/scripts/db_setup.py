@@ -17,6 +17,7 @@ from ..db import (
 )
 from ..reader import extract_records_calendar, extract_records_structured
 from ..scraper import scrape_timetable
+from ..utils import log_info
 
 
 def parse_args():
@@ -50,10 +51,10 @@ def main(calendar_pdf_fp: Path, structured_pdf_fp: Path, group: str):
     fill_block_hours(conn)
 
     calendar_records = extract_records_calendar(calendar_pdf_fp)
-    print(f'Calendar script => extracted {len(calendar_records)} records from {calendar_pdf_fp}')
+    log_info(f'Calendar script => extracted {len(calendar_records)} records from {calendar_pdf_fp}')
 
     structured_records = extract_records_structured(structured_pdf_fp)
-    print(
+    log_info(
         f'Structured script => extracted {len(structured_records)} records from {structured_pdf_fp}'
     )
 
@@ -63,16 +64,16 @@ def main(calendar_pdf_fp: Path, structured_pdf_fp: Path, group: str):
         source_file = row['source_file']
         page_number = row['page_number']
         new_id = insert_chunk(conn, heading, content, source_file, page_number)
-        print(f'Inserted chunk_id={new_id} from PDF={source_file}')
+        log_info(f'Inserted chunk_id={new_id} from PDF={source_file}')
 
     rows_in_db = fetch_all_chunks(conn)
-    print(f'\nAll PDF chunks in db => total {len(rows_in_db)} rows.')
+    log_info(f'\nAll PDF chunks in db => total {len(rows_in_db)} rows.')
     for row_in_db in rows_in_db:
-        print(row_in_db)
+        log_info(row_in_db)
 
     url = TIMETABLE_URL.format(group=group)
     timetable_data = scrape_timetable(url)
-    print(f'\nScraped {len(timetable_data)} lessons from {url}')
+    log_info(f'\nScraped {len(timetable_data)} lessons from {url}')
     group_id = insert_group(conn, group)
 
     for lesson in timetable_data:
@@ -100,10 +101,10 @@ def main(calendar_pdf_fp: Path, structured_pdf_fp: Path, group: str):
         )
 
     lessons_for_group = fetch_lessons_namedtuple(conn, group)
-    print(f'\nFetched {len(lessons_for_group)} lessons for group: {group}')
+    log_info(f'\nFetched {len(lessons_for_group)} lessons for group: {group}')
 
     for lrow in lessons_for_group:
-        print(lrow)
+        log_info(lrow)
 
     conn.close()
 
