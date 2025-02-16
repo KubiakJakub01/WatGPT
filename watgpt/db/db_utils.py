@@ -1,16 +1,13 @@
-# db_utils.py
-
 import sqlite3
-from sqlite3 import Connection
-from typing import Optional, List, Tuple, Union
 from collections import namedtuple
+from sqlite3 import Connection
 
-
-DATABASE_FILE = "chunks.db"  # or pick another name if you prefer
+from .constants import DATABASE_FILE
 
 # ----------------------------------------------------------------------
 # Existing "pdf_chunks" code (unchanged)
 # ----------------------------------------------------------------------
+
 
 def create_connection(db_file: str = DATABASE_FILE) -> Connection:
     """
@@ -39,11 +36,11 @@ def create_table_pdf_chunks(conn: Connection) -> None:
         conn.execute(create_table_sql)
 
 
-def drop_table(conn: Connection, table_name: str = "pdf_chunks") -> None:
+def drop_table(conn: Connection, table_name: str = 'pdf_chunks') -> None:
     """
     Drop the given table. Use with caution!
     """
-    drop_sql = f"DROP TABLE IF EXISTS {table_name};"
+    drop_sql = f'DROP TABLE IF EXISTS {table_name};'
     with conn:
         conn.execute(drop_sql)
 
@@ -52,9 +49,9 @@ def insert_chunk(
     conn: Connection,
     heading: str,
     content: str,
-    source_file: Optional[str] = None,
-    page_number: Optional[int] = None
-) -> int:
+    source_file: str | None = None,
+    page_number: int | None = None,
+) -> int | None:
     """
     Insert a single chunk (heading + content) into the db.
     Returns the newly inserted chunk_id.
@@ -68,7 +65,9 @@ def insert_chunk(
         return cursor.lastrowid
 
 
-def insert_multiple_chunks(conn: Connection, chunks: List[Tuple[str, str, Optional[str], Optional[int]]]) -> None:
+def insert_multiple_chunks(
+    conn: Connection, chunks: list[tuple[str, str, str | None, int | None]]
+) -> None:
     """
     Insert multiple chunks in one go.
     Each tuple in 'chunks' should be: (heading, content, source_file, page_number).
@@ -81,18 +80,18 @@ def insert_multiple_chunks(conn: Connection, chunks: List[Tuple[str, str, Option
         conn.executemany(insert_sql, chunks)
 
 
-def fetch_all_chunks(conn: Connection) -> List[Tuple[int, str, str, str, int]]:
+def fetch_all_chunks(conn: Connection) -> list[tuple[int, str, str, str, int]]:
     """
     Retrieve all rows from pdf_chunks.
     Returns a list of tuples (chunk_id, heading, content, source_file, page_number).
     """
-    select_sql = "SELECT chunk_id, heading, content, source_file, page_number FROM pdf_chunks;"
+    select_sql = 'SELECT chunk_id, heading, content, source_file, page_number FROM pdf_chunks;'
     with conn:
         rows = conn.execute(select_sql).fetchall()
     return rows
 
 
-def fetch_chunk_by_id(conn: Connection, chunk_id: int) -> Optional[Tuple[int, str, str, str, int]]:
+def fetch_chunk_by_id(conn: Connection, chunk_id: int) -> tuple[int, str, str, str, int] | None:
     """
     Fetch a single chunk row by its primary key chunk_id.
     Returns tuple (chunk_id, heading, content, source_file, page_number) or None if not found.
@@ -110,6 +109,7 @@ def fetch_chunk_by_id(conn: Connection, chunk_id: int) -> Optional[Tuple[int, st
 # ----------------------------------------------------------------------
 # NEW: Timetable schema (groups, teachers, courses, lessons)
 # ----------------------------------------------------------------------
+
 
 def create_timetable_schema(conn: Connection) -> None:
     create_block_hours_sql = """
@@ -180,13 +180,13 @@ def fill_block_hours(conn: Connection) -> None:
     Insert the known block hours (block1..block7) if they are not already in the table.
     """
     block_data = [
-        ("block1", "08:00", "09:35"),
-        ("block2", "09:50", "11:25"),
-        ("block3", "11:40", "13:15"),
-        ("block4", "13:30", "15:05"),
-        ("block5", "15:45", "17:35"),
-        ("block6", "17:50", "19:25"),
-        ("block7", "19:40", "21:15")
+        ('block1', '08:00', '09:35'),
+        ('block2', '09:50', '11:25'),
+        ('block3', '11:40', '13:15'),
+        ('block4', '13:30', '15:05'),
+        ('block5', '15:45', '17:35'),
+        ('block6', '17:50', '19:25'),
+        ('block7', '19:40', '21:15'),
     ]
     insert_sql = """
     INSERT OR IGNORE INTO block_hours (block_id, start_time, end_time)
@@ -202,52 +202,53 @@ def drop_timetable_tables(conn: Connection) -> None:
     Use with caution!
     """
     with conn:
-        conn.execute("DROP TABLE IF EXISTS lessons;")
-        conn.execute("DROP TABLE IF EXISTS groups;")
-        conn.execute("DROP TABLE IF EXISTS teachers;")
-        conn.execute("DROP TABLE IF EXISTS courses;")
+        conn.execute('DROP TABLE IF EXISTS lessons;')
+        conn.execute('DROP TABLE IF EXISTS groups;')
+        conn.execute('DROP TABLE IF EXISTS teachers;')
+        conn.execute('DROP TABLE IF EXISTS courses;')
 
 
-def insert_group(conn: Connection, group_code: str) -> int:
+def insert_group(conn: Connection, group_code: str) -> int | None:
     """
     Insert a new group record. Returns the new group_id.
     """
-    sql = "INSERT INTO groups (group_code) VALUES (?);"
+    sql = 'INSERT INTO groups (group_code) VALUES (?);'
     with conn:
         cursor = conn.execute(sql, (group_code,))
         return cursor.lastrowid
 
 
-def insert_teacher(conn: Connection, full_name: str, short_code: Optional[str] = None) -> int:
+def insert_teacher(conn: Connection, full_name: str, short_code: str | None = None) -> int | None:
     """
     Insert a new teacher record. Returns the new teacher_id.
     """
-    sql = "INSERT INTO teachers (full_name, short_code) VALUES (?, ?);"
+    sql = 'INSERT INTO teachers (full_name, short_code) VALUES (?, ?);'
     with conn:
         cursor = conn.execute(sql, (full_name, short_code))
         return cursor.lastrowid
 
 
-def insert_course(conn: Connection, course_code: str, course_name: str = "") -> int:
+def insert_course(conn: Connection, course_code: str, course_name: str = '') -> int | None:
     """
     Insert a new course record. Returns the new course_id.
     """
-    sql = "INSERT INTO courses (course_code, course_name) VALUES (?, ?);"
+    sql = 'INSERT INTO courses (course_code, course_name) VALUES (?, ?);'
     with conn:
         cursor = conn.execute(sql, (course_code, course_name))
         return cursor.lastrowid
 
 
-def insert_lesson(conn: Connection,
-                  group_id: int,
-                  course_id: int,
-                  teacher_id: Optional[int],
-                  lesson_date: str,
-                  block_id: str,
-                  room: Optional[str] = None,
-                  building: Optional[str] = None,
-                  info: Optional[str] = None
-                 ) -> int:
+def insert_lesson(
+    conn: Connection,
+    group_id: int | None,
+    course_id: int | None,
+    teacher_id: int | None,
+    lesson_date: str,
+    block_id: str,
+    room: str | None = None,
+    building: str | None = None,
+    info: str | None = None,
+) -> int | None:
     """
     Insert a new lesson record. Returns the new lesson_id.
     """
@@ -258,20 +259,23 @@ def insert_lesson(conn: Connection,
     VALUES (?, ?, ?, ?, ?, ?, ?, ?);
     """
     with conn:
-        cursor = conn.execute(sql, (
-            group_id,
-            course_id,
-            teacher_id,
-            lesson_date,
-            block_id,
-            room,
-            building,
-            info
-        ))
+        cursor = conn.execute(
+            sql,
+            (
+                group_id,
+                course_id,
+                teacher_id,
+                lesson_date,
+                block_id,
+                room,
+                building,
+                info,
+            ),
+        )
         return cursor.lastrowid
 
 
-def fetch_lessons_by_group(conn: Connection, group_code: str) -> List[Tuple]:
+def fetch_lessons_by_group(conn: Connection, group_code: str) -> list[tuple]:
     """
     Example query: join lessons -> groups -> courses -> teachers
     to return timetable info for a given group_code.
@@ -300,11 +304,23 @@ def fetch_lessons_by_group(conn: Connection, group_code: str) -> List[Tuple]:
 
 
 # Example namedtuple to interpret the fetch_lessons_by_group() rows:
-LessonRow = namedtuple("LessonRow", ["lesson_id", "group_code", "course_code",
-                                     "teacher_name", "lesson_date", "block_id",
-                                     "room","building", "info"])
+LessonRow = namedtuple(
+    'LessonRow',
+    [
+        'lesson_id',
+        'group_code',
+        'course_code',
+        'teacher_name',
+        'lesson_date',
+        'block_id',
+        'room',
+        'building',
+        'info',
+    ],
+)
 
-def fetch_lessons_namedtuple(conn: Connection, group_code: str) -> List[LessonRow]:
+
+def fetch_lessons_namedtuple(conn: Connection, group_code: str) -> list[LessonRow]:
     """
     Same as fetch_lessons_by_group but returns a list of LessonRow namedtuples.
     """
