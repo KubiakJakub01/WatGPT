@@ -2,7 +2,7 @@ import argparse
 from pathlib import Path
 
 from ..reader import extract_records_calendar, extract_records_structured
-from ..timetable_scraper import scrape_timetable
+from ..scraper import scrape_timetable
 from .constants import CALENDAR_PDF_FP, DATABASE_FILE, STRUCTURED_PDF_FP, TIMETABLE_URL
 from .db_utils import (
     create_connection,
