@@ -2,7 +2,7 @@ import argparse
 from pathlib import Path
 
 from ..constants import CALENDAR_PDF_FP, DATABASE_FILE, STRUCTURED_PDF_FP, TIMETABLE_URL
-from ..db.db_utils import (
+from ..db import (
     create_connection,
     create_table_pdf_chunks,
     create_timetable_schema,
