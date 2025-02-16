@@ -1,8 +1,7 @@
 import argparse
 from pathlib import Path
 
-from ..read_calendar_pdf import extract_pdf_records as extract_records_calendar
-from ..read_structured_pdf import extract_pdf_records as extract_records_structured
+from ..reader import extract_records_calendar, extract_records_structured
 from ..timetable_scraper import scrape_timetable
 from .constants import CALENDAR_PDF_FP, DATABASE_FILE, STRUCTURED_PDF_FP, TIMETABLE_URL
 from .db_utils import (

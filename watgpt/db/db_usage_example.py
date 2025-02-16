@@ -1,4 +1,4 @@
-from watgpt.db.db_utils import (
+from .db_utils import (
     create_connection,
     fetch_all_chunks,
     fetch_lessons_namedtuple,
