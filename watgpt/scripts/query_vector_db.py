@@ -1,4 +1,5 @@
 import argparse
+from pathlib import Path
 
 from ..constants import EMBEDDINGS_MODEL_NAME, UNIVERSITY_DOCS_COLLECTION, VECTOR_DATABASE_FILE
 from ..db import VectorDB
@@ -22,8 +23,11 @@ def main(query):
 
     # Query the database
     results = vector_db.query(query)
-    for doc, score in zip(results['documents'][0], results['distances'][0], strict=False):
-        log_info(f'Found: {doc} (Similarity Score: {score})')
+    for doc, score, metadata in zip(
+        results['documents'][0], results['distances'][0], results['metadatas'][0], strict=False
+    ):
+        source = Path(metadata['source_file']).name
+        log_info(f'Found: {doc} (Similarity Score: {score}) (Source: {source})')
 
 
 if __name__ == '__main__':

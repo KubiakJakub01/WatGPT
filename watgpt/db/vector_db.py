@@ -39,7 +39,7 @@ class VectorDB:
         )
         log_info(f'Chunk {chunk.chunk_id} added to the collection.')
 
-    def query(self, query):
+    def query(self, query: str):
         query_embedding = self.model.encode(query).tolist()
         results = self.collection.query(query_embeddings=query_embedding, n_results=3)
         return results
