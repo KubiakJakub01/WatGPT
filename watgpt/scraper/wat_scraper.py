@@ -5,19 +5,19 @@ from urllib.parse import urljoin, urlparse
 import requests
 from bs4 import BeautifulSoup
 
+from ..utils import log_error, log_info, log_warning
+
 
 class SiteCrawler:
-    def __init__(self, start_url, exclude_urls, download_folder, info_file):
+    def __init__(self, start_url, exclude_urls, download_folder):
         """
         :param start_url:     The root URL to start crawling from.
         :param exclude_urls:  A list of URLs to skip entirely during crawling.
         :param download_folder: Directory path to store downloaded PDF files.
-        :param info_file:     File path where we log scraped text and download messages.
         """
         self.start_url = start_url
         self.exclude_urls = set(exclude_urls)  # convert to set for faster lookup
         self.download_folder = download_folder
-        self.info_file = info_file
         os.makedirs(self.download_folder, exist_ok=True)
 
         self.visited = set()  # Keep track of visited URLs (HTML pages)
@@ -35,7 +35,7 @@ class SiteCrawler:
             if self.should_ignore_url(current_url):
                 continue
 
-            print(f'[INFO] Crawling: {current_url}')
+            log_info(f'Crawling: {current_url}')
             self.crawl_page(current_url)
 
     def crawl_page(self, url):
@@ -48,7 +48,7 @@ class SiteCrawler:
             response = requests.get(url, timeout=10)
             response.raise_for_status()
         except requests.RequestException as e:
-            print(f'[ERROR] Failed to fetch {url}: {e}')
+            log_warning(f'Failed to fetch {url}: {e}')
             return
 
         # Only parse if it's HTML
@@ -60,7 +60,7 @@ class SiteCrawler:
 
         # 1) Scrape text and log it
         page_text = self.extract_text(soup)
-        self.log_info(f'Scraped text from this site: {url}\n{page_text}\n\n')
+        log_info(f'Scraped text from this site: {url}\n{page_text}\n\n')
 
         # 2) Find and process links
         for link_tag in soup.find_all('a', href=True):
@@ -104,10 +104,10 @@ class SiteCrawler:
         file_path = os.path.join(self.download_folder, filename)
 
         if os.path.exists(file_path):
-            print(f'[INFO] Already downloaded, skipping: {file_path}')
+            log_info(f'Already downloaded, skipping: {file_path}')
             return
 
-        print(f'[INFO] Downloading PDF: {pdf_url}')
+        log_info(f'Downloading PDF: {pdf_url}')
         try:
             with requests.get(pdf_url, stream=True, timeout=15) as r:
                 r.raise_for_status()
@@ -116,16 +116,9 @@ class SiteCrawler:
                         if chunk:
                             f.write(chunk)
 
-            self.log_info(f'Downloaded PDF {filename} from this site {current_url}\n')
+            log_info(f'Downloaded PDF {filename} from this site {current_url}\n')
         except requests.RequestException as e:
-            print(f'[ERROR] Failed to download {pdf_url}: {e}')
-
-    def log_info(self, message):
-        """
-        Append a message to the info_file. This can include scraped text or PDF logs.
-        """
-        with open(self.info_file, 'a', encoding='utf-8') as f:
-            f.write(message)
+            log_error(f'Failed to download {pdf_url}: {e}')
 
     def should_ignore_url(self, url):
         """

@@ -24,21 +24,14 @@ def parse_args():
         default='downloads',
         help='Directory path to store downloaded PDF files.',
     )
-    parser.add_argument(
-        '--info_file',
-        type=str,
-        default='scrape_info.txt',
-        help='File path where we log scraped text and download messages.',
-    )
-
     return parser.parse_args()
 
 
-def main(url: str, exclude: list, download_folder: str, info_file: str):
-    crawler = SiteCrawler(url, exclude, download_folder, info_file)
+def main(url: str, exclude: list, download_folder: str):
+    crawler = SiteCrawler(url, exclude, download_folder)
     crawler.run()
 
 
 if __name__ == '__main__':
     args = parse_args()
-    main(args.url, args.exclude, args.download_folder, args.info_file)
+    main(args.url, args.exclude, args.download_folder)

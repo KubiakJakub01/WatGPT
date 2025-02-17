@@ -3,6 +3,8 @@ import re
 import requests
 from bs4 import BeautifulSoup
 
+from ..utils import log_warning
+
 
 def scrape_timetable(url):
     """
@@ -29,7 +31,7 @@ def scrape_timetable(url):
 
     lessons_div = soup.find('div', class_='lessons hidden')
     if not lessons_div:
-        print("No <div class='lessons hidden'> found.")
+        log_warning("No <div class='lessons hidden'> found.")
         return []
 
     lesson_divs = lessons_div.find_all('div', class_='lesson')

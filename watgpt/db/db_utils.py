@@ -2,11 +2,7 @@ import sqlite3
 from collections import namedtuple
 from sqlite3 import Connection
 
-from .constants import DATABASE_FILE
-
-# ----------------------------------------------------------------------
-# Existing "pdf_chunks" code (unchanged)
-# ----------------------------------------------------------------------
+from ..constants import DATABASE_FILE
 
 
 def create_connection(db_file: str = DATABASE_FILE) -> Connection:
@@ -329,37 +325,3 @@ def fetch_lessons_namedtuple(conn: Connection, group_code: str) -> list[LessonRo
     for row in raw_rows:
         results.append(LessonRow(*row))
     return results
-
-
-# ----------------------------------------------------------------------
-# Example usage (if you run this file directly)
-# ----------------------------------------------------------------------
-# if __name__ == "__main__":
-
-#     conn = create_connection()        # opens "chunks.db"
-#     create_table(conn)               # ensures pdf_chunks table is created
-#     create_timetable_schema(conn)    # ensures timetable tables are created
-
-#     # Insert an example group
-#     g_id = insert_group(conn, "WCY24IV1N2")
-#     # Insert an example teacher
-#     t_id = insert_teacher(conn, "Olejniczak Jarosław", "OJ")
-#     # Insert an example course
-#     c_id = insert_course(conn, "MumII", "Metody uczenia maszynowego II", "#CD5C5C")
-
-#     # Insert a sample lesson
-#     l_id = insert_lesson(conn,
-#                          group_id=g_id,
-#                          course_id=c_id,
-#                          teacher_id=t_id,
-#                          lesson_date="2024-10-05",  # or "2024_10_05" if you prefer
-#                          block_id="block1",
-#                          room="308 S",
-#                          info="Wykład")
-
-#     # Retrieve lessons for "WCY24IV1N2"
-#     lessons = fetch_lessons_namedtuple(conn, "WCY24IV1N2")
-#     for row in lessons:
-#         print(row)
-
-#     conn.close()
