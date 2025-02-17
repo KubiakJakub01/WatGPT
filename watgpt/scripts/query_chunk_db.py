@@ -29,6 +29,8 @@ def main(group_code: str):
     for lrow in lessons_for_group:
         log_info(lrow)
 
+    db.close()
+
 
 if __name__ == '__main__':
     args = parse_args()

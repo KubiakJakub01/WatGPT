@@ -145,26 +145,55 @@ CREATE TABLE lessons (
 
 
 ## Running the Code
-1. Activate poetry environment
+Make sure to activate the poetry environment before running these scripts:
 ```bash
 source $(poetry env info --path)/bin/activate
 ```
-
-2. Run the setup script to extract PDF data and populate the database:
+or run command with `poetry run` ex.:
 ```bash
-python -m watgpt.scripts.db_setup
+poetry run python -m watgpt.scripts.create_chunk_db
 ```
-This will:
-- Create chunks.db (SQLite database).
-- Extract text from PDFs in wat_data/ and store in pdf_chunks.
-- Scrape timetable data from the provided URL and populate timetable tables.
 
-3. Verify data with the example script:
-```bash
-python -m watgpt.scripts.db_usage_example
-```
-Outputs all PDF chunks and lessons for group "WCY24IV1N2".
+### Chunk Database
 
+1. **Create Chunk Database**
+	Run the setup script to extract PDF data and populate the database:
+	```bash
+	python -m watgpt.scripts.create_chunk_db
+	```
+	This will:
+	- Create chunks.db (SQLite database).
+	- Extract text from PDFs in wat_data/ and store in pdf_chunks.
+	- Scrape timetable data from the provided URL and populate timetable tables.
+
+2. **Query Chunk Database**:
+	Query data with the example script:
+	```bash
+	python -m watgpt.scripts.query_chunk_db
+	```
+	Outputs all PDF chunks and lessons for group `WCY24IV1N2`.
+
+### Vector Database
+
+1. **Create Vector Database**:
+	To create the vector database, run the following script:
+	```bash
+	python -m watgpt.scripts.create_vector_db
+	```
+	This will:
+	- Create `vectors.db` (SQLite database).
+	- Convert text chunks from `chunks.db` into vector representations.
+	- Store these vectors in the `vectors` table.
+
+2. **Query Vector Database**:
+	To query the vector database, use the following script:
+	```bash
+	python -m watgpt.scripts.query_vector_db -h
+	```
+	This script will:
+	- Accept a query text input.
+	- Convert the query into a vector.
+	- Find and return the most similar text chunks from the `vectors` table.
 
 ## Checking the Database
 Use SQLite CLI or a tool like DB Browser for SQLite:

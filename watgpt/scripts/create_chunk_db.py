@@ -92,6 +92,8 @@ def main(calendar_pdf_fp: Path, structured_pdf_fp: Path, group: str):
     for lrow in lessons_for_group:
         log_debug(lrow)
 
+    db.close()
+
 
 if __name__ == '__main__':
     args = parse_args()
