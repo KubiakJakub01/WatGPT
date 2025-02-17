@@ -9,6 +9,9 @@ class ChunkDB:
     def __init__(self, db_file: str = CHUNKS_DATABASE_FILE):
         self.conn = sqlite3.connect(db_file)
 
+    def __del__(self):
+        self.conn.close()
+
     def create_table_pdf_chunks(self) -> None:
         create_table_sql = """
         CREATE TABLE IF NOT EXISTS pdf_chunks (
