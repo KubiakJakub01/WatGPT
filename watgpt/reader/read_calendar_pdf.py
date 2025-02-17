@@ -5,12 +5,14 @@ from pathlib import Path
 import fitz
 from langchain.docstore.document import Document
 
+from ..utils import log_debug, log_info
+
 # A quick regex to detect something like DD.MM.YYYY
 # (and optionally the trailing " r." or " r" etc.)
 DATE_PATTERN = re.compile(r'^\d{1,2}\.\d{1,2}\.\d{4}(\s*r\.?)?$')
 
 
-def extract_header_and_rows(pdf_path: str | Path, debug_fp: str | None = None):
+def extract_header_and_rows(pdf_path: str | Path):
     """
     Extracts:
       - The big/bold heading from the first page (if any).
@@ -18,16 +20,12 @@ def extract_header_and_rows(pdf_path: str | Path, debug_fp: str | None = None):
       - Merges multi-line rows by your continuation rule.
 
     Returns: (header_text, [row_text, row_text, ...])
-
-    If debug_fp is not None, logs the grouping process.
     """
     doc = fitz.open(pdf_path)
     all_rows = []
     header_text = 'UNDEFINED_HEADER'
 
-    if debug_fp:
-        with open(debug_fp, 'w', encoding='utf-8') as debug_handle:
-            debug_handle.write(f'DEBUG LOG for PDF: {pdf_path}\n\n')
+    log_info(f'Extracting from PDF: {pdf_path}')
 
     for page_idx, page in enumerate(doc):
         # 1) Attempt to detect header on first page
@@ -37,17 +35,13 @@ def extract_header_and_rows(pdf_path: str | Path, debug_fp: str | None = None):
                 header_text = possible_header
 
         # 2) Parse the page's spans into row strings
-        page_rows = parse_page_into_rows(page, debug_fp)
+        page_rows = parse_page_into_rows(page)
         all_rows.extend(page_rows)
 
     # 3) Merge multi-line rows (where next row starts with digit/lowercase)
     merged = merge_multiline_rows(all_rows)
 
-    if debug_fp:
-        with open(debug_fp, 'a', encoding='utf-8') as debug_handle:
-            debug_handle.write('\nFINAL MERGED ROWS:\n')
-            for r in merged:
-                debug_handle.write(f'  {r}\n')
+    log_debug(f'Extracted {len(merged)} rows from {pdf_path}')
 
     return header_text, merged
 
@@ -76,7 +70,7 @@ def detect_header(page, min_font_size=12):
     return None
 
 
-def parse_page_into_rows(page, debug_file: str | None = None, row_diff_threshold=12, x_split=140):  # pylint: disable=too-many-branches
+def parse_page_into_rows(page, row_diff_threshold=12, x_split=140):  # pylint: disable=too-many-branches
     page_number = page.number
     blocks = page.get_text('dict')['blocks']
     spans = []
@@ -94,9 +88,7 @@ def parse_page_into_rows(page, debug_file: str | None = None, row_diff_threshold
     # (Unchanged) Sort spans top->bottom, left->right
     spans.sort(key=lambda x: (x[1], x[0]))
 
-    if debug_file:
-        with open(debug_file, 'a', encoding='utf-8') as debug_handle:
-            debug_handle.write(f'--- Page {page_number} ---\n')
+    log_debug(f'Parsing page {page_number} with {len(spans)} spans')
 
     rows_of_spans = []
     current_row = []
@@ -111,9 +103,7 @@ def parse_page_into_rows(page, debug_file: str | None = None, row_diff_threshold
             # check if new row
             if (y0 - last_y) >= row_diff_threshold:
                 rows_of_spans.append(current_row)
-                if debug_file:
-                    with open(debug_file, 'a', encoding='utf-8') as debug_handle:
-                        debug_handle.write(f' Finalized row => {current_row}\n')
+                log_debug(f' Finalized row => {current_row}')
                 current_row = [(x0, y0, text)]
                 last_y = y0
             else:
@@ -122,9 +112,7 @@ def parse_page_into_rows(page, debug_file: str | None = None, row_diff_threshold
 
     if current_row:
         rows_of_spans.append(current_row)
-        if debug_file:
-            with open(debug_file, 'a', encoding='utf-8') as debug_handle:
-                debug_handle.write(f' Finalized row => {current_row}\n')
+        log_debug(f' Finalized row => {current_row}')
 
     # Convert each list of spans -> single "row text" + store page_number
     row_dicts = []
@@ -136,12 +124,10 @@ def parse_page_into_rows(page, debug_file: str | None = None, row_diff_threshold
                 'text': row_text,
             }
         )
-        if debug_handle:
-            debug_handle.write(f' Row => {row_spans}\n')
-            debug_handle.write(f"  => row_text='{row_text}'\n\n")
+        log_debug(f' Row => {row_spans}')
+        log_debug(f"  => row_text='{row_text}'")
 
-    if debug_handle:
-        debug_handle.write('\n')
+    log_debug(f'Parsed {len(row_dicts)} rows from page {page_number}')
 
     return row_dicts
 
@@ -276,7 +262,7 @@ def save_docs_to_txt(docs: list[Document], output_file: str):
             f.write(f'CONTENT:\n{doc.page_content}\n\n')
 
 
-def extract_pdf_records(pdf_path: str | Path, debug_file: str | None = None) -> list[dict]:
+def extract_pdf_records(pdf_path: str | Path) -> list[dict]:
     """
     1) Extract the header and parse row dicts (with page_number, text).
     2) Merge multiline.
@@ -284,7 +270,7 @@ def extract_pdf_records(pdf_path: str | Path, debug_file: str | None = None) -> 
     4) Convert each Document into DB-friendly dict.
     """
     # 1) Extract
-    header_text, row_dicts = extract_header_and_rows(pdf_path, debug_fp=debug_file)
+    header_text, row_dicts = extract_header_and_rows(pdf_path)
     # Now row_dicts is a list of {"page_number": int, "text": "..."}
 
     # 2) Merge

@@ -17,7 +17,7 @@ from ..db import (
 )
 from ..reader import extract_records_calendar, extract_records_structured
 from ..scraper import scrape_timetable
-from ..utils import log_info
+from ..utils import log_debug, log_info
 
 
 def parse_args():
@@ -67,13 +67,13 @@ def main(calendar_pdf_fp: Path, structured_pdf_fp: Path, group: str):
         log_info(f'Inserted chunk_id={new_id} from PDF={source_file}')
 
     rows_in_db = fetch_all_chunks(conn)
-    log_info(f'\nAll PDF chunks in db => total {len(rows_in_db)} rows.')
+    log_info(f'All PDF chunks in db => total {len(rows_in_db)} rows.')
     for row_in_db in rows_in_db:
-        log_info(row_in_db)
+        log_debug(row_in_db)
 
     url = TIMETABLE_URL.format(group=group)
     timetable_data = scrape_timetable(url)
-    log_info(f'\nScraped {len(timetable_data)} lessons from {url}')
+    log_info(f'Scraped {len(timetable_data)} lessons from {url}')
     group_id = insert_group(conn, group)
 
     for lesson in timetable_data:
@@ -101,10 +101,10 @@ def main(calendar_pdf_fp: Path, structured_pdf_fp: Path, group: str):
         )
 
     lessons_for_group = fetch_lessons_namedtuple(conn, group)
-    log_info(f'\nFetched {len(lessons_for_group)} lessons for group: {group}')
+    log_info(f'Fetched {len(lessons_for_group)} lessons for group: {group}')
 
     for lrow in lessons_for_group:
-        log_info(lrow)
+        log_debug(lrow)
 
     conn.close()
 

@@ -1,5 +1,6 @@
 import sqlite3
 from collections import namedtuple
+from pathlib import Path
 from sqlite3 import Connection
 
 from ..constants import DATABASE_FILE
@@ -45,8 +46,8 @@ def insert_chunk(
     conn: Connection,
     heading: str,
     content: str,
-    source_file: str | None = None,
-    page_number: int | None = None,
+    source_file: str | Path,
+    page_number: int,
 ) -> int | None:
     """
     Insert a single chunk (heading + content) into the db.
@@ -57,7 +58,7 @@ def insert_chunk(
     VALUES (?, ?, ?, ?);
     """
     with conn:
-        cursor = conn.execute(insert_sql, (heading, content, source_file, page_number))
+        cursor = conn.execute(insert_sql, (heading, content, str(source_file), page_number))
         return cursor.lastrowid
 
 
