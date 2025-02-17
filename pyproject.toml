@@ -12,6 +12,8 @@ readme = "README.md"
 
 [tool.poetry-exec-plugin.commands]
 ruff = "ruff check watgpt"
+ruff_format = "ruff format watgpt"
+ruff_format_check = "ruff format --check watgpt"
 mypy = "mypy --ignore-missing-imports watgpt"
 pylint = "pylint --rcfile pyproject.toml watgpt"
 
