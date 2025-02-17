@@ -1,7 +1,0 @@
-fitz
-pandas
-unidecode
-langchain
-selenium
-time
-bs4S

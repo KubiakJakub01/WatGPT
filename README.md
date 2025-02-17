@@ -4,6 +4,73 @@ The Military University of Technology in Warsaw chatbot
 Current data sources for web scraping in excel:
 https://1drv.ms/x/c/82f573414933f60c/EVgTXJyG6LVMvUQtJyMjDxoBvfdNat9JczEBHSaQ3rHPPw
 
+## Installation
+
+To install and set up the project, you can use the Python Poetry package manager. Follow the steps below:
+
+**NOTE**: These instructions are tailored for Linux systems.
+
+1. Make sure you have Python installed on your system. You can download it from the official Python website: [python.org](https://www.python.org/downloads/).
+
+2. Install Poetry by running the following command in your terminal or command prompt:
+
+   ```bash
+   curl -sSL https://install.python-poetry.org | python3 -
+    ```
+
+   Then, export the Poetry binary directory to your system's PATH:
+   ```bash
+   export PATH="$HOME/.local/bin:$PATH"
+    ```
+   Optionaly you can add this line to your `~/.bashrc`.
+
+   Then you can run the following command to apply the changes:
+   ```bash
+   source ~/.bashrc
+   ```
+
+   Also you can install `poetry-exec-plugin` to enable running scripts from the `pyproject.toml` file:
+   ```bash
+   poetry self add poetry-exec-plugin
+   ```
+
+3. Clone the repository to your local machine:
+
+   ```bash
+   git clone https://github.com/KubiakJakub01/WatGPT.git
+   cd WatGPT
+    ```
+
+4. Install the project dependencies using Poetry:
+
+   ```bash
+   poetry install --with dev
+    ```
+
+5. To activate the virtual environment, run the following command:
+
+   ```bash
+   source $(poetry env info --path)/bin/activate
+    ```
+    Optionaly you can add the following line to your `.bashrc`:
+    ```bash
+    alias activate="source $(poetry env info --path)/bin/activate"
+    ```
+    Then you can activate the virtual environment by running:
+    ```bash
+    activate
+    ```
+  
+6. Setting Up Pre-commit Hooks:
+
+	To ensure code quality and consistency, you can set up pre-commit hooks using the `pre-commit` tool. Follow these steps:
+
+	```bash
+	pre-commit install
+	```
+
+	Now, the pre-commit hooks will automatically run on every commit, ensuring that your code adheres to the specified standards.
+
 ## Database Structure
 
 ### pdf_chunks Table
@@ -78,14 +145,14 @@ CREATE TABLE lessons (
 
 
 ## Running the Code
-1. Install dependencies:
+1. Activate poetry environment
 ```bash
-pip install -r requirements.txt
+source $(poetry env info --path)/bin/activate
 ```
 
 2. Run the setup script to extract PDF data and populate the database:
 ```bash
-python db_setup.py
+python -m watgpt.scripts.db_setup
 ```
 This will:
 - Create chunks.db (SQLite database).
@@ -94,7 +161,7 @@ This will:
 
 3. Verify data with the example script:
 ```bash
-python db_usage_example.py
+python -m watgpt.scripts.db_usage_example
 ```
 Outputs all PDF chunks and lessons for group "WCY24IV1N2".
 
@@ -110,7 +177,7 @@ SELECT * FROM pdf_chunks LIMIT 5;
 
 
 ## Data Formats
-### PDF Chunks (from read_calendar_pdf.py/read_structured_pdf.py):
+### PDF Chunks (from watgpt/reader/read_calendar_pdf.py & read_structured_pdf.py):
 - heading: Section title (e.g., "ORGANIZACJA ZAJĘĆ W ROKU AKADEMICKIM 2024/2025
 /STUDIA STACJONARNE CYWILNE/").
 - content: Text grouped into chunks of ~5 rows or sentences.
@@ -125,9 +192,3 @@ SELECT * FROM pdf_chunks LIMIT 5;
 - teacher_name: Full name parsed from scraped info.
 - room: Room number (e.g., "308").
 - building: Building number (e.g., "65").
-
-
-## Notes
-- Adjust pdf_path_1/pdf_path_2 in db_setup.py if PDF paths change.
-- Timetable URL in db_setup.py can be modified to scrape different groups.
-- Foreign keys (e.g., group_id) ensure relational integrity between tables.
