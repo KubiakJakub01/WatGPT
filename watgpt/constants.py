@@ -10,3 +10,4 @@ CALENDAR_PDF_FP = (
 )
 STRUCTURED_PDF_FP = DATA_DIR_PATH / 'informator_dla_studentow_1_roku_2024.pdf'
 EMBEDDINGS_MODEL_NAME = 'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2'
+UNIVERSITY_DOCS_COLLECTION = 'university_docs'
