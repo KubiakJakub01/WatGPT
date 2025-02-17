@@ -1,5 +1,10 @@
 from collections import namedtuple
 
+ChunkRow = namedtuple(
+    'ChunkRow',
+    ['chunk_id', 'heading', 'content', 'source_file', 'page_number'],
+)
+
 LessonRow = namedtuple(
     'LessonRow',
     [

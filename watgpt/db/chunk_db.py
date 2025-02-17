@@ -2,7 +2,7 @@ import sqlite3
 from pathlib import Path
 
 from ..constants import CHUNKS_DATABASE_FILE
-from .models import LessonRow
+from .models import ChunkRow, LessonRow
 
 
 class ChunkDB:
@@ -56,13 +56,13 @@ class ChunkDB:
         with self.conn:
             self.conn.executemany(insert_sql, chunks)
 
-    def fetch_all_chunks(self) -> list[tuple[int, str, str, str, int]]:
+    def fetch_all_chunks(self) -> list[ChunkRow]:
         select_sql = 'SELECT chunk_id, heading, content, source_file, page_number FROM pdf_chunks;'
         with self.conn:
             rows = self.conn.execute(select_sql).fetchall()
-        return rows
+        return [ChunkRow(*row) for row in rows]
 
-    def fetch_chunk_by_id(self, chunk_id: int) -> tuple[int, str, str, str, int] | None:
+    def fetch_chunk_by_id(self, chunk_id: int) -> ChunkRow | None:
         select_sql = """
         SELECT chunk_id, heading, content, source_file, page_number
         FROM pdf_chunks
@@ -70,7 +70,7 @@ class ChunkDB:
         """
         with self.conn:
             row = self.conn.execute(select_sql, (chunk_id,)).fetchone()
-        return row
+        return ChunkRow(*row) if row else None
 
     def create_timetable_schema(self) -> None:
         create_block_hours_sql = """

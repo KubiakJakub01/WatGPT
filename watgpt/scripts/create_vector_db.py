@@ -28,13 +28,7 @@ def main():
 
     # Add chunks to vector database
     for chunk in chunks_in_db:
-        chunk_id = chunk['chunk_id']
-        heading = chunk['heading']
-        content = chunk['content']
-        source_file = chunk['source_file']
-        page_num = chunk['page_number']
-        vector_db.add_chunk(chunk_id, heading, content, source_file, page_num)
-        log_info(f'Added chunk_id={chunk_id} to ChromaDB.')
+        vector_db.add_chunk(chunk)
     log_info('All chunks added to ChromaDB.')
 
 
