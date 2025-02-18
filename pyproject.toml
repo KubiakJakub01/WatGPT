@@ -28,6 +28,8 @@ pymupdf = "^1.25.3"
 requests = "^2.32.3"
 types-requests = "^2.32.0.20241016"
 coloredlogs = "^15.0.1"
+chromadb = "^0.6.3"
+sentence-transformers = "^3.4.1"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -37,6 +39,7 @@ pre-commit = "4.1.0"
 pylint = "3.3.4"
 pytest = "8.3.4"
 pytest-cov = "6.0.0"
+ipykernel = "^6.29.5"
 
 [tool.pylint]
 max-line-length = 100
@@ -49,7 +52,7 @@ disable = ["missing-docstring",
             "consider-using-from-import",
             "relative-beyond-top-level",
             "too-many-ancestors",
-            "too-many-positional-arguments",
+            "too-many-arguments",
             "duplicate-code"]
 fail-under = 10.0
 generated-members=["numpy.*","torch.*"]
