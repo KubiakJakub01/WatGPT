@@ -1,6 +1,6 @@
 from langchain.chat_models import init_chat_model
 from langchain.memory import ConversationBufferMemory
-from langchain.schema import HumanMessage, SystemMessage
+from langchain.schema import BaseMessage, HumanMessage, SystemMessage
 
 from .constants import LLM_MODEL_NAME, LLM_PROVIDER, LLM_RAG_SYSTEM_PROMPT, PROMPTS_FILE
 from .db import VectorDB
@@ -48,7 +48,7 @@ class LLMEngine:
 
         # Construct prompt
         prompt = self.system_prompt.format(context=context)
-        messages = [SystemMessage(content=prompt)]
+        messages: list[BaseMessage] = [SystemMessage(content=prompt)]
         messages.extend(history)  # Include chat history
         messages.append(HumanMessage(content=query))  # Add user query
 
