@@ -15,5 +15,6 @@ EMBEDDINGS_MODEL_NAME = 'sentence-transformers/paraphrase-multilingual-MiniLM-L1
 UNIVERSITY_DOCS_COLLECTION = 'university_docs'
 PROMPTS_FILE = CONFIG_DIR_PATH / 'prompts.yaml'
 LLM_RAG_SYSTEM_PROMPT = 'llm_rag_system_prompt'
+LLM_QUERY_EXTRACTION_PROMPT = 'llm_query_extraction_prompt'
 LLM_PROVIDER = 'groq'
 LLM_MODEL_NAME = 'llama3-8b-8192'
