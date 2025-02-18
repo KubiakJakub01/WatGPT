@@ -1,5 +1,6 @@
-import chromadb
-from sentence_transformers import SentenceTransformer
+from langchain.schema import Document
+from langchain_chroma import Chroma
+from langchain_huggingface import HuggingFaceEmbeddings
 
 from ..constants import EMBEDDINGS_MODEL_NAME, UNIVERSITY_DOCS_COLLECTION, VECTOR_DATABASE_FILE
 from ..utils import log_info
@@ -13,33 +14,56 @@ class VectorDB:
         collection_name: str = UNIVERSITY_DOCS_COLLECTION,
         embeddings_model_name: str = EMBEDDINGS_MODEL_NAME,
     ):
-        self.client = chromadb.PersistentClient(path=db_file)
-        self.collection = self.client.get_or_create_collection(name=collection_name)
-        self.model = SentenceTransformer(embeddings_model_name)
+        """
+        Initialize ChromaDB using LangChain's Chroma wrapper.
+
+        :param db_file: Path to the ChromaDB database.
+        :param collection_name: Name of the collection in ChromaDB.
+        :param embeddings_model_name: Hugging Face model for embedding generation.
+        """
+        self.embedding_function = HuggingFaceEmbeddings(model_name=embeddings_model_name)
+
+        # Initialize LangChain's Chroma vector store
+        self.vector_store = Chroma(
+            collection_name=collection_name,
+            persist_directory=db_file,
+            embedding_function=self.embedding_function,
+        )
 
     def add_chunk(self, chunk: ChunkRow):
-        existing_chunk = self.collection.get(ids=[str(chunk.chunk_id)])
+        """
+        Add a document chunk to ChromaDB if it doesn't already exist.
 
-        if existing_chunk and existing_chunk['ids']:
-            log_info(f'Chunk {chunk.chunk_id} already exists in the collection. Skipping.')
+        :param chunk: ChunkRow containing text and metadata.
+        """
+        # Check if chunk already exists
+        existing_docs = self.vector_store.get([str(chunk.chunk_id)])
+        if existing_docs['ids']:  # If IDs exist, chunk is already present
+            log_info(f'Chunk {chunk.chunk_id} already exists. Skipping.')
             return
 
-        embeddings = self.model.encode(chunk.content).tolist()
-        self.collection.add(
-            ids=[str(chunk.chunk_id)],
-            embeddings=[embeddings],
-            metadatas=[
-                {
-                    'heading': chunk.heading,
-                    'source_file': chunk.source_file,
-                    'page_num': chunk.page_number,
-                }
-            ],
-            documents=[chunk.content],
+        # Convert to LangChain Document format
+        document = Document(
+            page_content=chunk.content,
+            metadata={
+                'chunk_id': chunk.chunk_id,
+                'heading': chunk.heading,
+                'source_file': chunk.source_file,
+                'page_num': chunk.page_number,
+            },
         )
-        log_info(f'Chunk {chunk.chunk_id} added to the collection.')
 
-    def query(self, query: str):
-        query_embedding = self.model.encode(query).tolist()
-        results = self.collection.query(query_embeddings=query_embedding, n_results=3)
+        # Add document to Chroma
+        self.vector_store.add_documents([document])
+        log_info(f'Chunk {chunk.chunk_id} added to ChromaDB.')
+
+    def query(self, query: str, top_k: int = 3):
+        """
+        Retrieve top-k relevant chunks from ChromaDB using similarity search.
+
+        :param query: User query string.
+        :param top_k: Number of top matches to retrieve.
+        :return: List of relevant chunk texts.
+        """
+        results = self.vector_store.similarity_search(query, k=top_k)
         return results
