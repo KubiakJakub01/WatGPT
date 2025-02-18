@@ -54,10 +54,7 @@ disable = ["missing-docstring",
             "consider-using-from-import",
             "relative-beyond-top-level",
             "too-many-ancestors",
-<<<<<<< HEAD
-=======
             "too-many-arguments",
->>>>>>> 29cfe58b3f506e2b7158fc490ccbae8c58c06b94
             "too-many-positional-arguments",
             "duplicate-code"]
 fail-under = 10.0
