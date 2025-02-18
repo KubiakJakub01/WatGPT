@@ -26,11 +26,12 @@ selenium = "^4.28.1"
 beautifulsoup4 = "^4.13.3"
 pymupdf = "^1.25.3"
 requests = "^2.32.3"
-types-requests = "^2.32.0.20241016"
+types-requests = "2.32.0.20241016"
 coloredlogs = "^15.0.1"
 langchain-chroma = "^0.2.2"
 langchain-huggingface = "^0.1.2"
 langchain-groq = "^0.2.4"
+types-pyyaml = "6.0.12.20241230"
 
 
 [tool.poetry.group.dev.dependencies]
