@@ -59,7 +59,7 @@ class LLMEngine:
         response = self.llm.invoke(messages)
 
         # Store conversation history
-        self.memory.save_context({'input': query}, {'output': response.content})
+        self.memory.save_context({'input': query}, {'output': str(response.content)})
         sources = [
             f'{doc.metadata.get("source_file", None)}:{doc.metadata.get("page_num", None)}'
             for doc in results
