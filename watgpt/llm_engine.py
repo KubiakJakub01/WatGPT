@@ -2,13 +2,13 @@ from langchain.chat_models import init_chat_model
 from langchain.memory import ConversationBufferMemory
 from langchain.schema import HumanMessage, SystemMessage
 
-from .constants import LLM_RAG_SYSTEM_PROMPT, PROMPTS_FILE
+from .constants import LLM_MODEL_NAME, LLM_PROVIDER, LLM_RAG_SYSTEM_PROMPT, PROMPTS_FILE
 from .db import VectorDB
 from .utils import load_prompt, log_debug
 
 
 class LLMEngine:
-    def __init__(self, provider='groq', model='llama3-8b-8192'):
+    def __init__(self, provider: str = LLM_PROVIDER, model: str = LLM_MODEL_NAME):
         """
         Handles interaction with LLM and integrates RAG retrieval.
 
