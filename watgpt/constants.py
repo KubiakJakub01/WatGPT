@@ -1,8 +1,9 @@
 from pathlib import Path
 
-CHUNKS_DATABASE_FILE = 'chunks.db'
-VECTOR_DATABASE_FILE = 'vectors.db'
-DATA_DIR_PATH = Path('wat_data')
+PROJECT_ROOT = Path(__file__).parent.parent
+CHUNKS_DATABASE_FILE: str = str(PROJECT_ROOT / 'chunks.db')
+VECTOR_DATABASE_FILE: str = str(PROJECT_ROOT / 'vectors.db')
+DATA_DIR_PATH = PROJECT_ROOT / 'wat_data'
 TIMETABLE_URL = 'https://planzajec.wcy.wat.edu.pl/pl/rozklad?grupa_id={group}'
 CALENDAR_PDF_FP = (
     DATA_DIR_PATH
