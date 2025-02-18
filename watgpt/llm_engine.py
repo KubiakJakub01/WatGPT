@@ -4,6 +4,7 @@ import re
 from langchain.chat_models import init_chat_model
 from langchain.memory import ConversationBufferMemory
 from langchain.schema import BaseMessage, HumanMessage, SystemMessage
+from tabulate import tabulate
 
 from .constants import (
     LLM_MODEL_NAME,
@@ -46,7 +47,7 @@ class LLMEngine:
         )
 
         try:
-            extracted_data_match = re.search(r'\{.*\}', response.content)
+            extracted_data_match = re.search(r'\{.*\}', str(response.content))
             extracted_data = (
                 json.loads(extracted_data_match.group()) if extracted_data_match else None
             )
@@ -81,6 +82,21 @@ class LLMEngine:
                     ]
                 )
                 log_debug(f'Found timetable info: {timetable_info}')
+                headers = ['Data', 'Blok', 'Kod przedmiotu', 'Nauczyciel', 'Sala', 'Budynek']
+                lessons_data = [
+                    [
+                        lesson.lesson_date,
+                        lesson.block_id,
+                        lesson.course_code,
+                        lesson.teacher_name,
+                        lesson.room,
+                        lesson.building,
+                    ]
+                    for lesson in lessons
+                    if lesson.lesson_date == date
+                ]
+                timetable_info = tabulate(lessons_data, headers=headers, tablefmt='fancy_grid')
+
                 return f'Twoje zajęcia na {date}:\n{timetable_info}'
             return f'Nie znaleziono zajęć dla grupy {group_code} na {date}.'
         return None

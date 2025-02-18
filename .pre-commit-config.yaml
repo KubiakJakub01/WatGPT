@@ -26,5 +26,6 @@ repos:
         additional_dependencies: [
           types-requests==2.32.0.20241016,
           types-pyyaml==6.0.12.20241230,
-          types-dateparser==1.2.0.20250208
+          types-dateparser==1.2.0.20250208,
+          types-tabulate==0.9.0.20241207
         ]
