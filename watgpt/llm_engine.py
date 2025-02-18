@@ -21,6 +21,7 @@ class LLMEngine:
         self.memory = ConversationBufferMemory(memory_key='chat_history', return_messages=True)
 
         self.llm = init_chat_model(self.model, model_provider=self.provider)
+        log_debug(f'Initialized LLM model: {self.model} ({self.provider})')
         self.system_prompt = load_prompt(PROMPTS_FILE, LLM_RAG_SYSTEM_PROMPT)
 
     def retrieve_context(self, query: str, top_k: int = 3):
