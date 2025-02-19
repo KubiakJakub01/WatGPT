@@ -21,3 +21,8 @@ class TimetableItem(scrapy.Item):
     teacher_name = scrapy.Field()
     room = scrapy.Field()
     building = scrapy.Field()
+    group_code = scrapy.Field()
+
+class GroupItem(scrapy.Item):
+    group_code = scrapy.Field()
+    group_url = scrapy.Field()
