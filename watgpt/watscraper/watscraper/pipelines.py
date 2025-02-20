@@ -10,7 +10,11 @@ import sqlite3
 from datetime import datetime
 from itemadapter import ItemAdapter
 from watgpt.db.chunk_db import ChunkDB
-from watscraper.items import GroupItem,TimetableItem
+from watscraper.items import GroupItem,TimetableItem, PageContentItem, FileDownloadItem
+from scrapy.pipelines.files import FilesPipeline
+from urllib.parse import urlparse
+import os
+
 
 
 class WatscraperPipeline:
@@ -110,3 +114,49 @@ class TimetablePipeline:
             )
             spider.logger.info(f"Inserted lesson with id {lesson_id} for group '{group_code}'")
         return item
+
+class PostContentPipeline:
+    """
+    Insert (heading, content, source_file) into pdf_chunks table via ChunkDB.
+    """
+    def open_spider(self, spider):
+        self.db = ChunkDB()
+        self.db.create_table_pdf_chunks()
+
+    def close_spider(self, spider):
+        self.db.close()
+
+    def process_item(self, item, spider):
+        if isinstance(item, PageContentItem):
+            adapter = ItemAdapter(item)
+            heading = adapter.get("heading", "No Heading")
+            content = adapter.get("content", "")
+            source_file = adapter.get("source_url", "")
+            page_number = adapter.get("page_number", 0)
+
+            self.db.insert_chunk(
+                heading=heading,
+                content=content,
+                source_file=source_file,  # store the URL as "source_file"
+                page_number=page_number
+            )
+
+        # Return item so it can be passed to next pipeline if needed
+        return item
+
+
+class CustomFilesPipeline(FilesPipeline):
+    """
+    Saves files to:  FILES_STORE/<dir_name>/<original_filename>
+    """
+    def file_path(self, request, response=None, info=None, item=None):
+        adapter = ItemAdapter(item)
+        dir_name = adapter.get("dir_name", "no-dir")
+        parsed_url = urlparse(request.url)
+        filename = os.path.basename(parsed_url.path)
+
+        # If there's no filename in the path, fallback:
+        if not filename:
+            filename = "unnamed_file"
+
+        return f"{dir_name}/{filename}"

@@ -26,3 +26,20 @@ class TimetableItem(scrapy.Item):
 class GroupItem(scrapy.Item):
     group_code = scrapy.Field()
     group_url = scrapy.Field()
+
+class PageContentItem(scrapy.Item):
+    """Item for storing the extracted text from .post-content."""
+    heading = scrapy.Field()
+    content = scrapy.Field()
+    source_url = scrapy.Field()   # URL of the page
+    page_number = scrapy.Field()  # For the chunk DB, can default to 0 or 1
+
+class FileDownloadItem(scrapy.Item):
+    """
+    Item for downloading a file (doc, pdf, xls, etc.) 
+    using a custom pipeline.
+    """
+    file_urls = scrapy.Field()  # Scrapy's FilesPipeline expects 'file_urls'
+    files = scrapy.Field()      # Will be populated by FilesPipeline
+    dir_name = scrapy.Field()   # The subfolder name where we'll store it
+    origin_url = scrapy.Field() # Which page triggered the download

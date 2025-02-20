@@ -7,6 +7,8 @@
 #     https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 #     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
+FILES_STORE = "../../wat_data" 
+#FILES_STORE = "/home/maciek/WatGPT/wat_data"
 BOT_NAME = "watscraper"
 
 SPIDER_MODULES = ["watscraper.spiders"]
@@ -17,7 +19,7 @@ NEWSPIDER_MODULE = "watscraper.spiders"
 #USER_AGENT = "watscraper (+http://www.yourdomain.com)"
 
 # Obey robots.txt rules
-ROBOTSTXT_OBEY = True
+ROBOTSTXT_OBEY = False
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
 #CONCURRENT_REQUESTS = 32
@@ -65,6 +67,8 @@ ROBOTSTXT_OBEY = True
 ITEM_PIPELINES = {
     'watscraper.pipelines.GroupPipeline': 200,
     'watscraper.pipelines.TimetablePipeline': 300,
+    'watscraper.pipelines.PostContentPipeline': 400,
+    'watscraper.pipelines.CustomFilesPipeline': 500,
 }
 
 
