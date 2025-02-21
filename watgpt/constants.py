@@ -17,3 +17,14 @@ PROMPTS_FILE = CONFIG_DIR_PATH / 'prompts.yaml'
 LLM_RAG_SYSTEM_PROMPT = 'llm_rag_system_prompt'
 LLM_PROVIDER = 'groq'
 LLM_MODEL_NAME = 'llama3-8b-8192'
+# ---- Values for Spider
+ALLOWED_PATHS = (
+    r"wydzial/ksztalcenie",
+    r"/pl/wydzial/ksztalcenie/"
+)
+DENIED_PATHS = (
+    r"karty-informacyjne-przedmiotow",
+)
+DENIED_EXTENSIONS = [
+    "jpg", "jpeg", "png", "gif", "webp", "bmp"
+]

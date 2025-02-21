@@ -8,12 +8,16 @@
 #     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
 FILES_STORE = "../../wat_data" 
+ALLOWED_SUBPATHS = [
+    "pl/wydzial/ksztalcenie"
+]
 #FILES_STORE = "/home/maciek/WatGPT/wat_data"
 BOT_NAME = "watscraper"
 
 SPIDER_MODULES = ["watscraper.spiders"]
 NEWSPIDER_MODULE = "watscraper.spiders"
 
+RETRY_TIMES = 2
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = "watscraper (+http://www.yourdomain.com)"
@@ -22,7 +26,7 @@ NEWSPIDER_MODULE = "watscraper.spiders"
 ROBOTSTXT_OBEY = False
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
-#CONCURRENT_REQUESTS = 32
+CONCURRENT_REQUESTS = 32
 
 # Configure a delay for requests for the same website (default: 0)
 # See https://docs.scrapy.org/en/latest/topics/settings.html#download-delay

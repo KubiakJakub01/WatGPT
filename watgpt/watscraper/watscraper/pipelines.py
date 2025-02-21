@@ -16,6 +16,8 @@ from urllib.parse import urlparse
 import os
 from transformers import AutoTokenizer
 import pypdf as pypdf  # pip install PyPDF2
+from watgpt.watscraper.watscraper.chunk import chunk_text_token_based
+from extract import extract_text,extract_pdf_text
 
 
 
@@ -137,27 +139,6 @@ class PostContentPipeline:
     def close_spider(self, spider):
         self.db.close()
 
-    def chunk_text_token_based(
-        self,
-        text: str,
-        max_tokens: int = 512,
-        overlap_tokens: int = 50
-    ) -> list[str]:
-        tokens = self.tokenizer.encode(text, add_special_tokens=False)
-        total_tokens = len(tokens)
-        if total_tokens == 0:
-            return [""]
-
-        chunks = []
-        start = 0
-        while start < total_tokens:
-            end = start + max_tokens
-            chunk_tokens = tokens[start:end]
-            chunk_text = self.tokenizer.decode(chunk_tokens, skip_special_tokens=True)
-            chunks.append(chunk_text)
-            start += max(1, max_tokens - overlap_tokens)
-        return chunks
-
     def process_item(self, item, spider):
         if isinstance(item, PageContentItem):
             adapter = ItemAdapter(item)
@@ -166,9 +147,7 @@ class PostContentPipeline:
             source_url = adapter.get("source_url", "")
 
             # 3. Split the text into token-based chunks
-            chunk_size = 1024
-            overlap = 20
-            text_chunks = self.chunk_text_token_based(full_text, chunk_size, overlap)
+            text_chunks = chunk_text_token_based(full_text, max_tokens=1024, overlap_tokens=20)
 
             # 4. Insert each chunk into site_chunks
             for chunk in text_chunks:
@@ -237,7 +216,7 @@ class CustomFilesPipeline(FilesPipeline):
                 file_text = self.extract_text(file_full_path)
                 
                 # Chunk text
-                chunks = self.chunk_text(file_text, size=1024, overlap=20)
+                chunks = chunk_text_token_based(file_text, max_tokens=1024, overlap_tokens=20)
 
                 # Insert each chunk into DB
                 file_name = os.path.basename(local_path)
@@ -250,48 +229,3 @@ class CustomFilesPipeline(FilesPipeline):
                     )
 
         return super_item
-
-    def extract_text(self, filepath: str) -> str:
-        """
-        Example: parse PDF if extension=.pdf, otherwise return empty or handle other docs.
-        """
-        if not os.path.exists(filepath):
-            return ""
-        _, ext = os.path.splitext(filepath)
-        ext_lower = ext.lower()
-
-        if ext_lower == ".pdf":
-            return self.extract_pdf_text(filepath)
-        else:
-            # In real code, handle .docx, .txt, etc.
-            return ""
-
-    def extract_pdf_text(self, pdf_path: str) -> str:
-        """Simple PDF text extraction using PyPDF2."""
-        text = []
-        try:
-            with open(pdf_path, 'rb') as f:
-                reader = pypdf.PdfReader(f)
-                for page in reader.pages:
-                    page_text = page.extract_text() or ""
-                    text.append(page_text)
-        except Exception as e:
-            print(f"Error reading PDF {pdf_path}: {e}")
-        return "\n".join(text)
-
-    def chunk_text(self, text: str, size=1024, overlap=20) -> list[str]:
-        """
-        Basic character-based chunking.
-        e.g. chunk_size=1024, overlap=20 => the next chunk starts 1004 chars after previous start.
-        """
-        if not text:
-            return []
-        chunks = []
-        start = 0
-        length = len(text)
-        while start < length:
-            end = start + size
-            chunk = text[start:end]
-            chunks.append(chunk)
-            start += max(1, size - overlap)
-        return chunks
