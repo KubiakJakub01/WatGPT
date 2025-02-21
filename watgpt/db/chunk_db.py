@@ -12,6 +12,50 @@ class ChunkDB:
     def close(self) -> None:
         self.conn.close()
 
+    def create_table_site_chunks(self) -> None:
+        """
+        Creates a new table to store web-scraped content chunks.
+        Columns:
+          - chunk_id (PK)
+          - heading
+          - content
+          - source_url
+          - created_at
+        """
+        create_table_sql = """
+        CREATE TABLE IF NOT EXISTS site_chunks (
+            chunk_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            heading TEXT NOT NULL,
+            content TEXT NOT NULL,
+            source_url TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        """
+        with self.conn:
+            self.conn.execute(create_table_sql)
+
+    def drop_site_chunks_table(self) -> None:
+        drop_sql = "DROP TABLE IF EXISTS site_chunks;"
+        with self.conn:
+            self.conn.execute(drop_sql)
+
+    def insert_site_chunk(
+        self,
+        heading: str,
+        content: str,
+        source_url: str,
+    ) -> int | None:
+        """
+        Insert a new record into site_chunks table.
+        """
+        insert_sql = """
+        INSERT INTO site_chunks (heading, content, source_url)
+        VALUES (?, ?, ?);
+        """
+        with self.conn:
+            cursor = self.conn.execute(insert_sql, (heading, content, source_url))
+            return cursor.lastrowid
+
     def create_table_pdf_chunks(self) -> None:
         create_table_sql = """
         CREATE TABLE IF NOT EXISTS pdf_chunks (

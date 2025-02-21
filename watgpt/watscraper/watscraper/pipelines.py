@@ -14,6 +14,7 @@ from watscraper.items import GroupItem,TimetableItem, PageContentItem, FileDownl
 from scrapy.pipelines.files import FilesPipeline
 from urllib.parse import urlparse
 import os
+from transformers import AutoTokenizer
 
 
 
@@ -117,31 +118,65 @@ class TimetablePipeline:
 
 class PostContentPipeline:
     """
-    Insert (heading, content, source_file) into pdf_chunks table via ChunkDB.
+    This pipeline:
+      1) Creates site_chunks table (where we store web content).
+      2) Uses a token-based splitter to chunk the text from PageContentItem.
+      3) Inserts each chunk into site_chunks.
     """
+
     def open_spider(self, spider):
+        # 1. Init DB & create table
         self.db = ChunkDB()
-        self.db.create_table_pdf_chunks()
+        self.db.create_table_site_chunks()
+
+        # 2. Initialize a tokenizer
+        self.tokenizer = AutoTokenizer.from_pretrained("gpt2")  
+        # or any other model, e.g. "bert-base-uncased", "openai/whisper", etc.
 
     def close_spider(self, spider):
         self.db.close()
+
+    def chunk_text_token_based(
+        self,
+        text: str,
+        max_tokens: int = 512,
+        overlap_tokens: int = 50
+    ) -> list[str]:
+        tokens = self.tokenizer.encode(text, add_special_tokens=False)
+        total_tokens = len(tokens)
+        if total_tokens == 0:
+            return [""]
+
+        chunks = []
+        start = 0
+        while start < total_tokens:
+            end = start + max_tokens
+            chunk_tokens = tokens[start:end]
+            chunk_text = self.tokenizer.decode(chunk_tokens, skip_special_tokens=True)
+            chunks.append(chunk_text)
+            start += max(1, max_tokens - overlap_tokens)
+        return chunks
 
     def process_item(self, item, spider):
         if isinstance(item, PageContentItem):
             adapter = ItemAdapter(item)
             heading = adapter.get("heading", "No Heading")
-            content = adapter.get("content", "")
-            source_file = adapter.get("source_url", "")
-            page_number = adapter.get("page_number", 0)
+            full_text = adapter.get("content", "")
+            source_url = adapter.get("source_url", "")
 
-            self.db.insert_chunk(
-                heading=heading,
-                content=content,
-                source_file=source_file,  # store the URL as "source_file"
-                page_number=page_number
-            )
+            # 3. Split the text into token-based chunks
+            chunk_size = 512
+            overlap = 50
+            text_chunks = self.chunk_text_token_based(full_text, chunk_size, overlap)
 
-        # Return item so it can be passed to next pipeline if needed
+            # 4. Insert each chunk into site_chunks
+            for chunk in text_chunks:
+                self.db.insert_site_chunk(
+                    heading=heading,
+                    content=chunk,
+                    source_url=source_url
+                )
+
         return item
 
 
