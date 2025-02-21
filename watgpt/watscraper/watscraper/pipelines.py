@@ -15,6 +15,7 @@ from scrapy.pipelines.files import FilesPipeline
 from urllib.parse import urlparse
 import os
 from transformers import AutoTokenizer
+import pypdf as pypdf  # pip install PyPDF2
 
 
 
@@ -165,8 +166,8 @@ class PostContentPipeline:
             source_url = adapter.get("source_url", "")
 
             # 3. Split the text into token-based chunks
-            chunk_size = 512
-            overlap = 50
+            chunk_size = 1024
+            overlap = 20
             text_chunks = self.chunk_text_token_based(full_text, chunk_size, overlap)
 
             # 4. Insert each chunk into site_chunks
@@ -182,16 +183,115 @@ class PostContentPipeline:
 
 class CustomFilesPipeline(FilesPipeline):
     """
-    Saves files to:  FILES_STORE/<dir_name>/<original_filename>
+    1) Saves files to FILES_STORE/<dir_name>/<original_filename>
+    2) After download, parse the file -> chunk text -> store in file_chunks table.
     """
+
+    def open_spider(self, spider):
+        super().open_spider(spider)   # don't forget to call parent
+        self.db = ChunkDB()
+        self.db.create_file_chunks_table()
+        # If you also want to create pdf_chunks or site_chunks, do so here
+        # self.db.create_table_pdf_chunks()
+        # self.db.create_table_site_chunks()
+
+    def close_spider(self, spider):
+        super().close_spider(spider)
+        self.db.close()
+
     def file_path(self, request, response=None, info=None, item=None):
+        """
+        Where the file will be stored locally.
+        """
         adapter = ItemAdapter(item)
         dir_name = adapter.get("dir_name", "no-dir")
         parsed_url = urlparse(request.url)
         filename = os.path.basename(parsed_url.path)
 
-        # If there's no filename in the path, fallback:
         if not filename:
             filename = "unnamed_file"
-
         return f"{dir_name}/{filename}"
+
+    def item_completed(self, results, item, info):
+        """
+        Called after each file is downloaded.
+        `results` is a list of (success, file_info) tuples.
+        """
+        # Call parent so the item gets the "files" field populated
+        super_item = super().item_completed(results, item, info)
+
+        # We'll parse each successful download
+        for success, file_info in results:
+            if success:
+                local_path = file_info['path']   # e.g. "no-dir/filename.pdf"
+                file_full_path = os.path.join(self.store.basedir, local_path)
+                
+                # The "file_url" is the actual download link
+                downloaded_url = file_info['url']
+                
+                # Original page that triggered the download
+                adapter = ItemAdapter(item)
+                source_page_url = adapter.get("origin_url", "")
+                
+                # Extract text
+                file_text = self.extract_text(file_full_path)
+                
+                # Chunk text
+                chunks = self.chunk_text(file_text, size=1024, overlap=20)
+
+                # Insert each chunk into DB
+                file_name = os.path.basename(local_path)
+                for chunk in chunks:
+                    self.db.insert_file_chunk(
+                        source_page_url=source_page_url,
+                        file_url=downloaded_url,
+                        file_name=file_name,
+                        content=chunk
+                    )
+
+        return super_item
+
+    def extract_text(self, filepath: str) -> str:
+        """
+        Example: parse PDF if extension=.pdf, otherwise return empty or handle other docs.
+        """
+        if not os.path.exists(filepath):
+            return ""
+        _, ext = os.path.splitext(filepath)
+        ext_lower = ext.lower()
+
+        if ext_lower == ".pdf":
+            return self.extract_pdf_text(filepath)
+        else:
+            # In real code, handle .docx, .txt, etc.
+            return ""
+
+    def extract_pdf_text(self, pdf_path: str) -> str:
+        """Simple PDF text extraction using PyPDF2."""
+        text = []
+        try:
+            with open(pdf_path, 'rb') as f:
+                reader = pypdf.PdfReader(f)
+                for page in reader.pages:
+                    page_text = page.extract_text() or ""
+                    text.append(page_text)
+        except Exception as e:
+            print(f"Error reading PDF {pdf_path}: {e}")
+        return "\n".join(text)
+
+    def chunk_text(self, text: str, size=1024, overlap=20) -> list[str]:
+        """
+        Basic character-based chunking.
+        e.g. chunk_size=1024, overlap=20 => the next chunk starts 1004 chars after previous start.
+        """
+        if not text:
+            return []
+        chunks = []
+        start = 0
+        length = len(text)
+        while start < length:
+            end = start + size
+            chunk = text[start:end]
+            chunks.append(chunk)
+            start += max(1, size - overlap)
+        return chunks

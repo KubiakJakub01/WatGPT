@@ -12,6 +12,49 @@ class ChunkDB:
     def close(self) -> None:
         self.conn.close()
 
+    def create_file_chunks_table(self) -> None:
+        """
+        Table schema (file_chunks):
+            - chunk_id (PK)
+            - source_page_url (the page from which file was linked)
+            - file_url (the actual download link)
+            - file_name
+            - content (the chunked text)
+            - created_at
+        """
+        create_table_sql = """
+        CREATE TABLE IF NOT EXISTS file_chunks (
+            chunk_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            source_page_url TEXT,
+            file_url TEXT,
+            file_name TEXT,
+            content TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        """
+        with self.conn:
+            self.conn.execute(create_table_sql)
+
+    def insert_file_chunk(
+        self,
+        source_page_url: str,
+        file_url: str,
+        file_name: str,
+        content: str
+    ) -> int | None:
+        """
+        Insert one chunk of file text into the file_chunks table.
+        """
+        insert_sql = """
+        INSERT INTO file_chunks (source_page_url, file_url, file_name, content)
+        VALUES (?, ?, ?, ?);
+        """
+        with self.conn:
+            cursor = self.conn.execute(
+                insert_sql, (source_page_url, file_url, file_name, content)
+            )
+            return cursor.lastrowid
+
     def create_table_site_chunks(self) -> None:
         """
         Creates a new table to store web-scraped content chunks.
