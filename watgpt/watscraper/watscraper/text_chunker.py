@@ -1,6 +1,12 @@
 from transformers import AutoTokenizer
 
-def chunk_text_token_based(
+class TextChunker:
+    def __init__(self, tokenizer_model: str = "gpt2"):
+        self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_model)
+        self.tokenizer.model_max_length = 100000
+
+    def chunk_text_token_based(
+        self,
         text: str,
         max_tokens: int = 1024,
         overlap_tokens: int = 20
@@ -18,13 +24,10 @@ def chunk_text_token_based(
             chunk_text = self.tokenizer.decode(chunk_tokens, skip_special_tokens=True)
             chunks.append(chunk_text)
             start += max(1, max_tokens - overlap_tokens)
+        print(f"CHUNKS FROM Text chunker:\n{chunks}")
         return chunks
 
-def chunk_text(self, text: str, size=1024, overlap=20) -> list[str]:
-        """
-        Basic character-based chunking.
-        e.g. chunk_size=1024, overlap=20 => the next chunk starts 1004 chars after previous start.
-        """
+    def chunk_text(self, text: str, size=1024, overlap=20) -> list[str]:
         if not text:
             return []
         chunks = []

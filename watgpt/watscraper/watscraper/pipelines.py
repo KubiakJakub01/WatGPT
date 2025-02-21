@@ -6,18 +6,17 @@
 
 # useful for handling different item types with a single interface
 from itemadapter import ItemAdapter
-import sqlite3
 from datetime import datetime
 from itemadapter import ItemAdapter
-from watgpt.db.chunk_db import ChunkDB
+import watgpt.db.chunk_db as chunk_db
 from watscraper.items import GroupItem,TimetableItem, PageContentItem, FileDownloadItem
 from scrapy.pipelines.files import FilesPipeline
 from urllib.parse import urlparse
 import os
 from transformers import AutoTokenizer
 import pypdf as pypdf  # pip install PyPDF2
-from watgpt.watscraper.watscraper.chunk import chunk_text_token_based
-from extract import extract_text,extract_pdf_text
+from watgpt.watscraper.watscraper.text_chunker import TextChunker
+from .extract import extract_text,extract_pdf_text
 
 
 
@@ -35,51 +34,25 @@ class GroupPipeline:
       - Caches group IDs to avoid duplicate insertions.
     """
     def open_spider(self, spider):
-        self.db = ChunkDB()
-        self.db.create_timetable_schema()
-        self.db.fill_block_hours()
         # Cache inserted groups keyed by group_code.
         self.groups_cache = {}
 
-    def close_spider(self, spider):
-        self.db.close()
-
     def process_item(self, item, spider):
-        adapter = ItemAdapter(item)
-        # Only process GroupItem objects.
         if isinstance(item, GroupItem):
-            group_code = adapter.get("group_code")
+            group_code = item.get("group_code")
             if group_code and group_code not in self.groups_cache:
-                group_id = self.db.insert_group(group_code)
+                group_id = chunk_db.insert_group(group_code)  # new SQLAlchemy method
                 self.groups_cache[group_code] = group_id
                 spider.logger.info(f"Inserted group '{group_code}' with id {group_id}")
         return item
 
 class TimetablePipeline:
-    """
-    Pipeline for processing TimetableItem objects.
-    
-    This pipeline:
-      - Converts the date from "YYYY_MM_DD" to "YYYY-MM-DD".
-      - Ensures the group exists (inserting it if needed) using a local cache.
-      - Inserts teacher, course, and lesson data into the database.
-    """
     def open_spider(self, spider):
-        self.db = ChunkDB()
-        self.db.create_timetable_schema()
-        self.db.fill_block_hours()
-        # Cache for groups to prevent duplicate group insertions.
         self.groups_cache = {}
 
-    def close_spider(self, spider):
-        self.db.close()
-
     def process_item(self, item, spider):
-        adapter = ItemAdapter(item)
-        # Only process TimetableItem objects.
         if isinstance(item, TimetableItem):
-            # Convert the date string from "YYYY_MM_DD" to "YYYY-MM-DD".
-            date_str = adapter.get("date")
+            date_str = item.get("date")
             try:
                 dt = datetime.strptime(date_str, "%Y_%m_%d")
                 formatted_date = dt.strftime("%Y-%m-%d")
@@ -87,37 +60,31 @@ class TimetablePipeline:
                 spider.logger.error(f"Error parsing date '{date_str}': {e}")
                 formatted_date = date_str  # Fallback to original string if conversion fails
 
-            # Ensure the group exists in the database.
-            group_code = adapter.get("group_code") or "WCY24IX3S0"
+            group_code = item.get("group_code") or "WCY24IX3S0"
             if group_code not in self.groups_cache:
-                group_id = self.db.insert_group(group_code)
+                group_id = chunk_db.insert_group(group_code)
                 self.groups_cache[group_code] = group_id
             else:
                 group_id = self.groups_cache[group_code]
 
-            # Insert teacher if available.
-            teacher_name = adapter.get("teacher_name")
-            teacher_id = None
-            if teacher_name:
-                teacher_id = self.db.insert_teacher(teacher_name)
+            teacher_name = item.get("teacher_name")
+            teacher_id = chunk_db.insert_teacher(teacher_name) if teacher_name else None
 
-            # Insert the course based on the course_code.
-            course_code = adapter.get("course_code")
-            course_id = self.db.insert_course(course_code)
+            course_id = chunk_db.insert_course(item.get("course_code"))
 
-            # Insert the lesson into the database.
-            lesson_id = self.db.insert_lesson(
+            lesson_id = chunk_db.insert_lesson(
                 group_id=group_id,
                 course_id=course_id,
                 teacher_id=teacher_id,
                 lesson_date=formatted_date,
-                block_id=adapter.get("block_id"),
-                room=adapter.get("room"),
-                building=adapter.get("building"),
-                info=adapter.get("info")
+                block_id=item.get("block_id"),
+                room=item.get("room"),
+                building=item.get("building"),
+                info=item.get("info"),
             )
             spider.logger.info(f"Inserted lesson with id {lesson_id} for group '{group_code}'")
         return item
+
 
 class PostContentPipeline:
     """
@@ -127,37 +94,23 @@ class PostContentPipeline:
       3) Inserts each chunk into site_chunks.
     """
 
-    def open_spider(self, spider):
-        # 1. Init DB & create table
-        self.db = ChunkDB()
-        self.db.create_table_site_chunks()
-
-        # 2. Initialize a tokenizer
-        self.tokenizer = AutoTokenizer.from_pretrained("gpt2")  
-        # or any other model, e.g. "bert-base-uncased", "openai/whisper", etc.
-
-    def close_spider(self, spider):
-        self.db.close()
-
     def process_item(self, item, spider):
-        if isinstance(item, PageContentItem):
-            adapter = ItemAdapter(item)
-            heading = adapter.get("heading", "No Heading")
-            full_text = adapter.get("content", "")
-            source_url = adapter.get("source_url", "")
-
-            # 3. Split the text into token-based chunks
-            text_chunks = chunk_text_token_based(full_text, max_tokens=1024, overlap_tokens=20)
-
-            # 4. Insert each chunk into site_chunks
-            for chunk in text_chunks:
-                self.db.insert_site_chunk(
-                    heading=heading,
-                    content=chunk,
-                    source_url=source_url
-                )
-
-        return item
+            if isinstance(item, PageContentItem):
+                heading = item.get("heading", "No Heading")
+                full_text = item.get("content", "")
+                source_url = item.get("source_url", "")
+                chunker = TextChunker(tokenizer_model="gpt2")
+                text_chunks = chunker.chunk_text_token_based(full_text, max_tokens=1024, overlap_tokens=20)
+                
+                from watgpt.db.chunk_db import create_chunk
+                for text_chunk in text_chunks:
+                    create_chunk(
+                        source_url=source_url,
+                        file_url=None,            # no file URL for site
+                        title=heading,
+                        content=text_chunk
+                    )
+            return item
 
 
 class CustomFilesPipeline(FilesPipeline):
@@ -165,67 +118,34 @@ class CustomFilesPipeline(FilesPipeline):
     1) Saves files to FILES_STORE/<dir_name>/<original_filename>
     2) After download, parse the file -> chunk text -> store in file_chunks table.
     """
-
     def open_spider(self, spider):
-        super().open_spider(spider)   # don't forget to call parent
-        self.db = ChunkDB()
-        self.db.create_file_chunks_table()
-        # If you also want to create pdf_chunks or site_chunks, do so here
-        # self.db.create_table_pdf_chunks()
-        # self.db.create_table_site_chunks()
-
-    def close_spider(self, spider):
-        super().close_spider(spider)
-        self.db.close()
-
-    def file_path(self, request, response=None, info=None, item=None):
-        """
-        Where the file will be stored locally.
-        """
-        adapter = ItemAdapter(item)
-        dir_name = adapter.get("dir_name", "no-dir")
-        parsed_url = urlparse(request.url)
-        filename = os.path.basename(parsed_url.path)
-
-        if not filename:
-            filename = "unnamed_file"
-        return f"{dir_name}/{filename}"
-
+        super().open_spider(spider)
+    
     def item_completed(self, results, item, info):
-        """
-        Called after each file is downloaded.
-        `results` is a list of (success, file_info) tuples.
-        """
-        # Call parent so the item gets the "files" field populated
         super_item = super().item_completed(results, item, info)
 
-        # We'll parse each successful download
+        from watgpt.db.chunk_db import create_chunk
+
         for success, file_info in results:
             if success:
-                local_path = file_info['path']   # e.g. "no-dir/filename.pdf"
-                file_full_path = os.path.join(self.store.basedir, local_path)
-                
-                # The "file_url" is the actual download link
-                downloaded_url = file_info['url']
-                
-                # Original page that triggered the download
-                adapter = ItemAdapter(item)
-                source_page_url = adapter.get("origin_url", "")
-                
-                # Extract text
-                file_text = self.extract_text(file_full_path)
-                
-                # Chunk text
-                chunks = chunk_text_token_based(file_text, max_tokens=1024, overlap_tokens=20)
+                local_path = file_info["path"]
+                downloaded_url = file_info["url"]
+                source_page_url = item.get("origin_url", "")
 
-                # Insert each chunk into DB
+                # extract text from the file
+                file_text = extract_text(os.path.join(self.store.basedir, local_path))
+                # chunk
+                chunker = TextChunker(tokenizer_model="gpt2")
+                text_chunks = chunker.chunk_text_token_based(file_text, max_tokens=1024, overlap_tokens=20)
                 file_name = os.path.basename(local_path)
-                for chunk in chunks:
-                    self.db.insert_file_chunk(
-                        source_page_url=source_page_url,
+
+                # Insert each chunk into `chunks`
+                for text_chunk in text_chunks:
+                    create_chunk(
+                        source_url=source_page_url,
                         file_url=downloaded_url,
-                        file_name=file_name,
-                        content=chunk
+                        title=file_name,
+                        content=text_chunk
                     )
 
         return super_item
