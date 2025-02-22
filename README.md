@@ -89,6 +89,21 @@ To run the project in a Docker container, you can use the provided Dockerfile. F
 docker build -t watgpt .
 ```
 
+### Docker Compose
+
+To run the project with Docker Compose, use the following command:
+```bash
+docker-compose up
+```
+It will start the API.
+
+### API
+
+To run the API, use the following command:
+```bash
+uvicorn watgpt.api:app --host 0.0.0.0 --port 8000 --reload
+```
+
 ### Chunk Database
 
 1. **Create Chunk Database**
