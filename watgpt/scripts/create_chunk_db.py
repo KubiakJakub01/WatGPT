@@ -5,7 +5,7 @@ from ..constants import CALENDAR_PDF_FP, CHUNKS_DATABASE_FILE, STRUCTURED_PDF_FP
 from ..db import ChunkDB
 from ..reader import extract_records_calendar, extract_records_structured
 from ..scraper import scrape_timetable
-from ..utils import log_debug, log_info
+from ..utils import clear_database, log_debug, log_info
 
 
 def parse_args():
@@ -96,5 +96,6 @@ def main(calendar_pdf_fp: Path, structured_pdf_fp: Path, group: str):
 
 
 if __name__ == '__main__':
+    clear_database(CHUNKS_DATABASE_FILE)
     args = parse_args()
     main(args.calendar_pdf_fp, args.structured_pdf_fp, args.group)

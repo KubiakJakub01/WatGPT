@@ -1,8 +1,9 @@
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).parent.parent
-CHUNKS_DATABASE_FILE: str = str(PROJECT_ROOT / 'chunks.db')
-VECTOR_DATABASE_FILE: str = str(PROJECT_ROOT / 'vectors.db')
+DATABASE_DIR = PROJECT_ROOT / 'databases'
+CHUNKS_DATABASE_FILE: str = str(DATABASE_DIR / 'chunks.db')
+VECTOR_DATABASE_FILE: str = str(DATABASE_DIR / 'vectors.db')
 DATA_DIR_PATH = PROJECT_ROOT / 'wat_data'
 CONFIG_DIR_PATH = PROJECT_ROOT / 'config'
 TIMETABLE_URL = 'https://planzajec.wcy.wat.edu.pl/pl/rozklad?grupa_id={group}'

@@ -1,4 +1,5 @@
 import logging
+import shutil
 from datetime import datetime
 from pathlib import Path
 
@@ -38,6 +39,16 @@ def log_warning(*args, **kwargs):
 def log_error(*args, **kwargs):
     """Log an error message."""
     logger.error(*args, **kwargs)
+
+
+def clear_database(database_file: str):
+    database_file_ = Path(database_file)
+    if database_file_.exists():
+        log_info(f'Deleting existing database file: {database_file}')
+        if database_file_.is_dir():
+            shutil.rmtree(database_file)
+        else:
+            database_file_.unlink()
 
 
 def load_prompt(filepath: Path = PROMPTS_FILE, prompt_name: str = LLM_RAG_SYSTEM_PROMPT) -> str:
