@@ -82,6 +82,13 @@ or run command with `poetry run` ex.:
 poetry run python -m watgpt.scripts.create_chunk_db
 ```
 
+### Environment Variables
+
+Create a `.env` file in the project root directory and add the following environment variables:
+```bash
+GROQ_API_KEY=your_api_key
+```
+
 ### Docker
 
 To run the project in a Docker container, you can use the provided Dockerfile. Follow these steps:
