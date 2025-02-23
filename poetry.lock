@@ -4008,6 +4008,20 @@ files = [
 ]
 
 [[package]]
+name = "pymupdf4llm"
+version = "0.0.17"
+description = "PyMuPDF Utilities for LLM/RAG"
+optional = false
+python-versions = "*"
+files = [
+    {file = "pymupdf4llm-0.0.17-py3-none-any.whl", hash = "sha256:26de9996945f15e3ca507908f80dc18a959f5b5214bb2e302c7f7034089665a0"},
+    {file = "pymupdf4llm-0.0.17.tar.gz", hash = "sha256:27287ef9fe0217cf37841a3ef2bcf70da2553c43d95ea39b664a6de6485678c3"},
+]
+
+[package.dependencies]
+pymupdf = ">=1.24.10"
+
+[[package]]
 name = "pyopenssl"
 version = "25.0.0"
 description = "Python wrapper module around the OpenSSL library"
@@ -6288,4 +6302,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "4df7a172aaf4f76619926511dfd2e66c359810273b389eda620f6fe2d5d90593"
+content-hash = "a719a9f3bc3e39362fbc8f117bb9dbf5d40e183ecec4637d876cc51a7ace04ca"
