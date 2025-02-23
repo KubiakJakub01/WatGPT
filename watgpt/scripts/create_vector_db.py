@@ -1,6 +1,3 @@
-import os
-import shutil
-
 from ..constants import (
     CHUNKS_DATABASE_FILE,
     EMBEDDINGS_MODEL_NAME,
@@ -8,12 +5,7 @@ from ..constants import (
     VECTOR_DATABASE_FILE,
 )
 from ..db import ChunkDB, VectorDB
-from ..utils import log_info
-
-
-def clear_database():
-    if os.path.exists(VECTOR_DATABASE_FILE):
-        shutil.rmtree(VECTOR_DATABASE_FILE)
+from ..utils import clear_database, log_info
 
 
 def main():
@@ -33,5 +25,5 @@ def main():
 
 
 if __name__ == '__main__':
-    clear_database()
+    clear_database(VECTOR_DATABASE_FILE)
     main()
