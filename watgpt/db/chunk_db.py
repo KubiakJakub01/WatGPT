@@ -7,7 +7,7 @@ from .models import ChunkRow, LessonRow
 
 class ChunkDB:
     def __init__(self, db_file: str = CHUNKS_DATABASE_FILE):
-        self.conn = sqlite3.connect(db_file)
+        self.conn = sqlite3.connect(db_file, check_same_thread=False)
 
     def close(self) -> None:
         self.conn.close()

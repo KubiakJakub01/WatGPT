@@ -100,7 +100,7 @@ docker build -t watgpt .
 
 To run the project with Docker Compose, use the following command:
 ```bash
-docker-compose up
+docker compose up
 ```
 It will start the API.
 

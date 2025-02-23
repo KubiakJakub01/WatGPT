@@ -4,7 +4,8 @@ FROM python:3.10-slim
 ENV PYTHONUNBUFFERED=1 \
     POETRY_VERSION=1.7.1 \
     POETRY_VIRTUALENVS_IN_PROJECT=true \
-    POETRY_NO_INTERACTION=1
+    POETRY_NO_INTERACTION=1 \
+    PIP_DEFAULT_TIMEOUT=360
 
 # Set working directory
 WORKDIR /home
@@ -17,6 +18,8 @@ RUN apt-get update && apt-get install -y \
 # Install Poetry
 RUN curl -sSL https://install.python-poetry.org | python3 -
 ENV PATH="/root/.local/bin:$PATH"
+
+RUN poetry config installer.parallel false
 
 # Copy only necessary files for dependency installation
 COPY pyproject.toml poetry.lock ./
