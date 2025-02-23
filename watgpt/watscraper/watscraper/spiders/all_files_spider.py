@@ -39,8 +39,9 @@ class AllFilesSpider(CrawlSpider):
 
         # Extract text from .post-content (excluding <h3>)
         content_text_nodes = response.xpath(
-            '//div[@class="post-content"]//*[not(self::h3)]//text()'
+            '//div[@class="post-content"]//text()[normalize-space() and not(ancestor::script) and not(ancestor::style)]'
         ).getall()
+
         content_text = "\n".join(t.strip() for t in content_text_nodes if t.strip())
 
         yield PageContentItem(

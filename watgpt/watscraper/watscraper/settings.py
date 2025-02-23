@@ -17,7 +17,7 @@ BOT_NAME = "watscraper"
 SPIDER_MODULES = ["watscraper.spiders"]
 NEWSPIDER_MODULE = "watscraper.spiders"
 
-RETRY_TIMES = 2
+RETRY_TIMES = 1
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = "watscraper (+http://www.yourdomain.com)"

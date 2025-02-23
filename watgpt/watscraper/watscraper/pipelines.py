@@ -16,7 +16,7 @@ import os
 from transformers import AutoTokenizer
 import pypdf as pypdf  # pip install PyPDF2
 from watgpt.watscraper.watscraper.text_chunker import TextChunker
-from .extract import extract_text,extract_pdf_text
+from .extract import extract_text_from_file
 
 
 
@@ -116,30 +116,39 @@ class PostContentPipeline:
 class CustomFilesPipeline(FilesPipeline):
     """
     1) Saves files to FILES_STORE/<dir_name>/<original_filename>
-    2) After download, parse the file -> chunk text -> store in file_chunks table.
+    2) After download, parses the file -> chunks text -> stores in file_chunks table.
     """
-    def open_spider(self, spider):
-        super().open_spider(spider)
-    
+    def file_path(self, request, response=None, info=None, *, item=None):
+        from urllib.parse import urlparse
+        import os
+        # Parse the URL to get the original file name without query parameters.
+        parsed = urlparse(request.url)
+        original_filename = os.path.basename(parsed.path)
+        
+        # Get the desired directory name from the item (set by your spider).
+        if item is not None:
+            dir_name = item.get('dir_name', '')
+            if dir_name:
+                # Return path as: <dir_name>/<original_filename>
+                return os.path.join(dir_name, original_filename)
+        return original_filename
+
     def item_completed(self, results, item, info):
         super_item = super().item_completed(results, item, info)
 
         from watgpt.db.chunk_db import create_chunk
-
+        import os
         for success, file_info in results:
             if success:
                 local_path = file_info["path"]
                 downloaded_url = file_info["url"]
                 source_page_url = item.get("origin_url", "")
-
-                # extract text from the file
-                file_text = extract_text(os.path.join(self.store.basedir, local_path))
-                # chunk
+                file_text = extract_text_from_file(os.path.join(self.store.basedir, local_path))
+                # Chunk the extracted text.
                 chunker = TextChunker(tokenizer_model="gpt2")
                 text_chunks = chunker.chunk_text_token_based(file_text, max_tokens=1024, overlap_tokens=20)
                 file_name = os.path.basename(local_path)
 
-                # Insert each chunk into `chunks`
                 for text_chunk in text_chunks:
                     create_chunk(
                         source_url=source_page_url,
@@ -149,3 +158,4 @@ class CustomFilesPipeline(FilesPipeline):
                     )
 
         return super_item
+
