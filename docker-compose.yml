@@ -9,7 +9,7 @@ services:
       - "8000:8000"
     environment:
       - PYTHONPATH=/home
-      - GROQ_API_KEY=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
+      - GROQ_API_KEY=your_key_here
     command: 
       - sh
       - -c
