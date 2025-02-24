@@ -4,7 +4,7 @@ import stat
 import subprocess
 from pathlib import Path
 import argparse
-from watgpt.db.database import init_db
+from watgpt.db.sql_db import SqlDB
 
 def ensure_executable(script_path: Path) -> None:
     """
@@ -29,7 +29,7 @@ def parse_args():
 
 def main(spider_name: str):
 
-    init_db()
+    sql_db = SqlDB()
     # The Bash script is located at: watgpt/scripts/run_scrapy.sh
     # Since this file (scrape.py) is in the same folder, we can resolve it relative to __file__.
     script_path = (Path(__file__).parent / "run_scrapy.sh").resolve()

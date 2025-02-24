@@ -27,6 +27,7 @@ ROBOTSTXT_OBEY = False
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
 CONCURRENT_REQUESTS = 32
+LOG_LEVEL = 'INFO'
 
 # Configure a delay for requests for the same website (default: 0)
 # See https://docs.scrapy.org/en/latest/topics/settings.html#download-delay
@@ -74,6 +75,7 @@ ITEM_PIPELINES = {
     'watscraper.pipelines.PostContentPipeline': 400,
     'watscraper.pipelines.CustomFilesPipeline': 500,
 }
+DOWNLOAD_TIMEOUT = 15
 
 
 # Enable and configure the AutoThrottle extension (disabled by default)

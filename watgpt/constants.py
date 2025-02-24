@@ -21,7 +21,7 @@ LLM_PROVIDER = 'groq'
 LLM_MODEL_NAME = 'llama3-8b-8192'
 # ---- Values for Spider
 ALLOWED_PATHS = (
-    r"/wydzial/ksztalcenie/informacje-studenci/informator-1-rok",
+    r"wydzial/ksztalcenie/informacje-studenci/informator-1-rok",
 )
 DENIED_PATHS = (
     r"karty-informacyjne-przedmiotow",

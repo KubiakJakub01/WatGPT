@@ -1,13 +1,27 @@
 services:
-  watgpt:
-    build: .
-    container_name: watgpt
+  create_db:
+    image: watgpt:latest
+    container_name: watgpt_container
     volumes:
+      - ./wat_data:/home/wat_data
       - ./databases:/home/databases
-    expose:
-      - "8000"
     ports:
       - "8000:8000"
-    env_file:
-      - .env
-    restart: always
+    environment:
+      - PYTHONPATH=/home
+      - GROQ_API_KEY=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
+    command: 
+      - sh
+      - -c
+      - |
+        poetry run python -m watgpt.scripts.create_sql_db
+        echo "test"
+        echo '✅ 1) DB created...'
+        echo '🕷️ 2) Starting Scrapy...'
+        poetry run python -m watgpt.scripts.scrape
+        echo '✅ 2) Scraping done...'
+        echo '🗄️ 3) Creating vector DB...'
+        poetry run python -m watgpt.scripts.create_vector_db
+        echo '✅ 3) Vector DB created...'
+        echo '🚀 4) Starting FastAPI...'
+        poetry run uvicorn watgpt.api:app --host 0.0.0.0 --port 8000

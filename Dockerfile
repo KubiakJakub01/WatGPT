@@ -13,26 +13,28 @@ WORKDIR /home
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     curl \
+    # If your scraping or PDF reading requires these, for example:
+    # poppler-utils \
+    # libxml2-dev libxslt-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Poetry
 RUN curl -sSL https://install.python-poetry.org | python3 -
 ENV PATH="/root/.local/bin:$PATH"
-
 RUN poetry config installer.parallel false
 
-# Copy only necessary files for dependency installation
+# Copy only the pyproject & lock first, for caching
 COPY pyproject.toml poetry.lock ./
 
-# Install dependencies
+# Install dependencies (remove `--no-dev` if Scrapy is in dev-deps)
 RUN poetry install --no-root --no-dev
 
-# Copy the rest of the application
+# Copy the rest of your application
 COPY config /home/config
 COPY watgpt /home/watgpt
 
 # Expose the port
 EXPOSE 8000
 
-# Run the FastAPI app
+# Default command (overridden by docker-compose for db_init, etc.)
 CMD ["poetry", "run", "uvicorn", "watgpt.api:app", "--host", "0.0.0.0", "--port", "8000"]

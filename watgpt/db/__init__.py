@@ -1,3 +1,4 @@
 from .vector_db import VectorDB
+from .sql_db import SqlDB
 
-__all__ = ['VectorDB']
+__all__ = ['SqlDB','VectorDB']
