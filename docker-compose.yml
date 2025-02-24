@@ -1,0 +1,13 @@
+services:
+  watgpt:
+    build: .
+    container_name: watgpt
+    volumes:
+      - ./databases:/home/databases
+    expose:
+      - "8000"
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    restart: always

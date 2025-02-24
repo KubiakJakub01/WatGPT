@@ -1,4 +1,3 @@
-# watgpt/scripts/create_vector_db.py
 import os
 import shutil
 from watgpt.constants import (
@@ -35,5 +34,5 @@ def main():
     log_info('All chunks added to ChromaDB.')
 
 if __name__ == '__main__':
-    clear_database()
+    clear_database(VECTOR_DATABASE_FILE)
     main()
