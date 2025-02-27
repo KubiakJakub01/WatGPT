@@ -1,5 +1,8 @@
+from typing import Optional
+
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text, func
-from sqlalchemy.orm import DeclarativeMeta, declarative_base, relationship
+from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
+from sqlalchemy.orm import relationship
 
 Base: DeclarativeMeta = declarative_base()  # type: ignore
 
@@ -67,7 +70,7 @@ class Lesson(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    group = relationship('Group', backref='lessons')
-    course = relationship('Course', backref='lessons')
-    teacher = relationship('Teacher', backref='lessons')
-    block = relationship('BlockHours', backref='lessons')
+    group: 'Group' = relationship('Group', backref='lessons')
+    course: 'Course' = relationship('Course', backref='lessons')
+    teacher: Optional['Teacher'] = relationship('Teacher', backref='lessons')
+    block: 'BlockHours' = relationship('BlockHours', backref='lessons')
