@@ -124,12 +124,8 @@ class CustomFilesPipeline(FilesPipeline):
     2) After download, parses the file -> chunks text -> stores in file_chunks table.
     """
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Initialize the attribute so that pylint sees it defined in __init__
-        self.db = None
-
     def open_spider(self, spider):
+        # pylint: disable=attribute-defined-outside-init
         self.db = SqlDB()
         super().open_spider(spider)
 

@@ -40,7 +40,7 @@ class AllFilesSpider(CrawlSpider):
         content_text_nodes = response.xpath(
             """
             //div[@class="post-content"]//text()[normalize-space() 
-            and not(ancestor::script) c
+            and not(ancestor::script)
             and not(ancestor::style)]
             """
         ).getall()
