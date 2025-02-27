@@ -1,20 +1,20 @@
-import os
-from pathlib import Path
-from sqlalchemy import create_engine, func
+from collections import namedtuple
+
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+
 from watgpt.constants import CHUNKS_DATABASE_FILE
-from watgpt.db.models import Base, Chunk, BlockHours, Group, Teacher, Course, Lesson
+from watgpt.db.models import Base, BlockHours, Chunk, Course, Group, Lesson, Teacher
+
 
 class SqlDB:
     def __init__(self, db_file: str = CHUNKS_DATABASE_FILE):
         """
         Initialize the SQL database connection using the path provided in CHUNKS_DATABASE_FILE.
         """
-        self.db_url = f"sqlite:///{db_file}"
+        self.db_url = f'sqlite:///{db_file}'
         self.engine = create_engine(
-            self.db_url,
-            echo=False,
-            connect_args={"check_same_thread": False}
+            self.db_url, echo=False, connect_args={'check_same_thread': False}
         )
         self.SessionLocal = sessionmaker(bind=self.engine)
         self.init_db()
@@ -25,7 +25,7 @@ class SqlDB:
         Create all tables defined in Base.metadata.
         """
         Base.metadata.create_all(bind=self.engine)
-        print(f"Created tables in {self.db_url}")
+        print(f'Created tables in {self.db_url}')
 
     # ---------------------------
     # CHUNKS (site + file) methods
@@ -37,10 +37,7 @@ class SqlDB:
         db = self.SessionLocal()
         try:
             new_chunk = Chunk(
-                source_url=source_url,
-                file_url=file_url,
-                title=title,
-                content=content
+                source_url=source_url, file_url=file_url, title=title, content=content
             )
             db.add(new_chunk)
             db.commit()
@@ -69,13 +66,13 @@ class SqlDB:
         db = self.SessionLocal()
         try:
             data = [
-                ("block1", "08:00", "09:35"),
-                ("block2", "09:50", "11:25"),
-                ("block3", "11:40", "13:15"),
-                ("block4", "13:30", "15:05"),
-                ("block5", "15:45", "17:35"),
-                ("block6", "17:50", "19:25"),
-                ("block7", "19:40", "21:15"),
+                ('block1', '08:00', '09:35'),
+                ('block2', '09:50', '11:25'),
+                ('block3', '11:40', '13:15'),
+                ('block4', '13:30', '15:05'),
+                ('block5', '15:45', '17:35'),
+                ('block6', '17:50', '19:25'),
+                ('block7', '19:40', '21:15'),
             ]
             for block_id, st, et in data:
                 existing = db.query(BlockHours).filter_by(block_id=block_id).first()
@@ -102,7 +99,7 @@ class SqlDB:
         finally:
             db.close()
 
-    def insert_teacher(self, full_name: str, short_code: str = None) -> int:
+    def insert_teacher(self, full_name: str, short_code: str = '') -> int:
         """
         Insert a new teacher and return its teacher_id.
         """
@@ -116,7 +113,7 @@ class SqlDB:
         finally:
             db.close()
 
-    def insert_course(self, course_code: str, course_name: str = "") -> int:
+    def insert_course(self, course_code: str, course_name: str = '') -> int:
         """
         Insert a new course and return its course_id.
         """
@@ -154,7 +151,7 @@ class SqlDB:
                 block_id=block_id,
                 room=room,
                 building=building,
-                info=info
+                info=info,
             )
             db.add(new_lesson)
             db.commit()
@@ -176,7 +173,7 @@ class SqlDB:
             return lessons
         finally:
             db.close()
-    
+
     def fetch_lessons_namedtuple(self, group_code: str):
         """
         Return lessons for the given group_code as named tuples with the fields:
@@ -187,15 +184,27 @@ class SqlDB:
             grp = db.query(Group).filter_by(group_code=group_code).first()
             if not grp:
                 return []
-            from collections import namedtuple
-            LessonNT = namedtuple("LessonNT", ["lesson_date", "block_id", "course_code", "teacher_name", "room", "building"])
-            # Join Lesson with Course and Teacher (using outer join for Teacher in case it's missing)
+
+            LessonNT = namedtuple(
+                'LessonNT',
+                [
+                    'lesson_date',
+                    'block_id',
+                    'course_code',
+                    'teacher_name',
+                    'room',
+                    'building',
+                ],
+            )
+
+            # Join Lesson with Course and Teacher
+            # (using outer join for Teacher in case it's missing)
             query = (
                 db.query(
                     Lesson.lesson_date,
                     Lesson.block_id,
                     Course.course_code,
-                    Teacher.full_name.label("teacher_name"),
+                    Teacher.full_name.label('teacher_name'),
                     Lesson.room,
                     Lesson.building,
                 )
@@ -208,7 +217,3 @@ class SqlDB:
             return lessons_nt
         finally:
             db.close()
-
-    
-
-

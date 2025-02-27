@@ -65,7 +65,10 @@ disable = ["missing-docstring",
             "too-many-ancestors",
             "too-many-arguments",
             "too-many-positional-arguments",
-            "duplicate-code"]
+            "duplicate-code",
+            "wrong-import-order",
+            "too-few-public-methods",
+            "not-callable"]
 fail-under = 10.0
 generated-members=["numpy.*","torch.*"]
 
@@ -99,6 +102,7 @@ exclude = [
     "site-packages",
     "venv",
 ]
+
 
 # Same as Black.
 line-length = 100

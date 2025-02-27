@@ -20,12 +20,6 @@ LLM_QUERY_EXTRACTION_PROMPT = 'llm_query_extraction_prompt'
 LLM_PROVIDER = 'groq'
 LLM_MODEL_NAME = 'llama3-8b-8192'
 # ---- Values for Spider
-ALLOWED_PATHS = (
-    r"wydzial/ksztalcenie/informacje-studenci/informator-1-rok",
-)
-DENIED_PATHS = (
-    r"karty-informacyjne-przedmiotow",
-)
-DENIED_EXTENSIONS = [
-    "jpg", "jpeg", "png", "gif", "webp", "bmp"
-]
+ALLOWED_PATHS = (r'wydzial/ksztalcenie/informacje-studenci/informator-1-rok',)
+DENIED_PATHS = (r'karty-informacyjne-przedmiotow',)
+DENIED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp']

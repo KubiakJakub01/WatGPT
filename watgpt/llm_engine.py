@@ -43,7 +43,10 @@ class LLMEngine:
         :return: Extracted data in format {"group_code": str | None, "raw_date": str | None}
         """
         response = self.llm.invoke(
-            [SystemMessage(content=self.query_extraction_prompt), HumanMessage(content=query)]
+            [
+                SystemMessage(content=self.query_extraction_prompt),
+                HumanMessage(content=query),
+            ]
         )
 
         try:
@@ -82,7 +85,14 @@ class LLMEngine:
                     ]
                 )
                 log_debug(f'Found timetable info: {timetable_info}')
-                headers = ['Data', 'Blok', 'Kod przedmiotu', 'Nauczyciel', 'Sala', 'Budynek']
+                headers = [
+                    'Data',
+                    'Blok',
+                    'Kod przedmiotu',
+                    'Nauczyciel',
+                    'Sala',
+                    'Budynek',
+                ]
                 lessons_data = [
                     [
                         lesson.lesson_date,
@@ -143,7 +153,10 @@ class LLMEngine:
         # Store conversation history
         self.memory.save_context({'input': query}, {'output': str(response.content)})
         sources = [
-            f'{doc.metadata.get("title", "No Title")} - {doc.metadata.get("source_url", "No URL")} - {doc.metadata.get("file_url", "No URL")}'
+            f"""
+            {doc.metadata.get('title', 'No Title')} - {doc.metadata.get('source_url', 'No URL')} 
+            - {doc.metadata.get('file_url', 'No URL')}
+            """
             for doc in results
         ]
 

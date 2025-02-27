@@ -1,18 +1,20 @@
 import os
 import shutil
+
 from watgpt.constants import (
     EMBEDDINGS_MODEL_NAME,
     UNIVERSITY_DOCS_COLLECTION,
     VECTOR_DATABASE_FILE,
 )
-from watgpt.utils import log_info
 from watgpt.db.sql_db import SqlDB
 from watgpt.db.vector_db import VectorDB
+from watgpt.utils import log_info
 
 
 def clear_database():
     if os.path.exists(VECTOR_DATABASE_FILE):
         shutil.rmtree(VECTOR_DATABASE_FILE)
+
 
 def main():
     # 1) Initialize tables (optional if not yet done)
@@ -26,12 +28,13 @@ def main():
     vector_db = VectorDB(
         db_file=VECTOR_DATABASE_FILE,
         collection_name=UNIVERSITY_DOCS_COLLECTION,
-        embeddings_model_name=EMBEDDINGS_MODEL_NAME
+        embeddings_model_name=EMBEDDINGS_MODEL_NAME,
     )
 
     for chunk in chunks_in_db:
         vector_db.add_chunk(chunk)
     log_info('All chunks added to ChromaDB.')
+
 
 if __name__ == '__main__':
     clear_database()

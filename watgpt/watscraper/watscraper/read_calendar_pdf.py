@@ -3,7 +3,6 @@ import string
 from pathlib import Path
 
 import fitz
-from langchain.docstore.document import Document
 
 from watgpt.utils import log_debug, log_info
 
@@ -17,7 +16,7 @@ def extract_header_and_rows(pdf_path: str | Path):
       - The big/bold heading from the first page (if any).
       - Rows from each page using a row threshold of <12 in y-diff.
       - Merges multi-line rows by your continuation rule.
-    
+
     Returns: (header_text, [row_dict, row_dict, ...])
     """
     doc = fitz.open(pdf_path)
@@ -190,14 +189,15 @@ def merge_multiline_rows(rows: list[dict]) -> list[dict]:
                 merged_rows.append(row)
     return merged_rows
 
+
 def extract_calendar_text(pdf_path: str | Path) -> str:
     """
     Simplified single-method extraction for calendar PDFs.
-    
+
     Uses all the read_calendar.py methods but returns a single aggregated text
     (header plus all merged row texts) as one string.
     """
     header_text, row_dicts = extract_header_and_rows(pdf_path)
     # Join the header and each row's text into a single text block.
-    all_text = header_text + "\n" + "\n".join(row['text'] for row in row_dicts)
+    all_text = header_text + '\n' + '\n'.join(row['text'] for row in row_dicts)
     return all_text

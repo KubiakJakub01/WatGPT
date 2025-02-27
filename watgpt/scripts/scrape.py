@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
+import argparse
 import os
 import stat
 import subprocess
 from pathlib import Path
-import argparse
+
 from watgpt.db.sql_db import SqlDB
+
 
 def ensure_executable(script_path: Path) -> None:
     """
@@ -15,30 +17,35 @@ def ensure_executable(script_path: Path) -> None:
         st = os.stat(script_path)
         os.chmod(script_path, st.st_mode | stat.S_IEXEC)
 
+
 def parse_args():
     parser = argparse.ArgumentParser(
         description="Run 'timetable' and/or 'all_files' spiders via the Bash script."
     )
     parser.add_argument(
-        "--only",
+        '--only',
         type=str,
-        default="",
-        help="Spider name to run (e.g., 'timetable' or 'all_files'). If empty, both spiders will run."
+        default='',
+        help="""
+        Spider name to run (e.g., 'timetable' or 'all_files'). 
+        If empty, both spiders will run."
+        """,
     )
     return parser.parse_args()
 
-def main(spider_name: str):
 
+def main(spider_name: str):
     sql_db = SqlDB()
+    sql_db.init_db()
     # The Bash script is located at: watgpt/scripts/run_scrapy.sh
     # Since this file (scrape.py) is in the same folder, we can resolve it relative to __file__.
-    script_path = (Path(__file__).parent / "run_scrapy.sh").resolve()
+    script_path = (Path(__file__).parent / 'run_scrapy.sh').resolve()
 
     # Ensure the Bash script is executable so the user doesn't have to manually chmod it.
     ensure_executable(script_path)
 
     if not script_path.exists():
-        raise FileNotFoundError(f"Cannot find the script: {script_path}")
+        raise FileNotFoundError(f'Cannot find the script: {script_path}')
 
     # Call the Bash script with or without a spider argument.
     if spider_name:
@@ -48,6 +55,7 @@ def main(spider_name: str):
         print("No spider specified -> running both 'timetable' and 'all_files' spiders.")
         subprocess.run([str(script_path)], check=True)
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     args = parse_args()
     main(args.only)

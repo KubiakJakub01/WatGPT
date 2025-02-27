@@ -3,10 +3,8 @@
 # See documentation in:
 # https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
-from scrapy import signals
-
 # useful for handling different item types with a single interface
-from itemadapter import is_item, ItemAdapter
+from scrapy import signals
 
 
 class WatscraperSpiderMiddleware:
@@ -21,39 +19,37 @@ class WatscraperSpiderMiddleware:
         crawler.signals.connect(s.spider_opened, signal=signals.spider_opened)
         return s
 
-    def process_spider_input(self, response, spider):
+    def process_spider_input(self, _response, _spider):
         # Called for each response that goes through the spider
         # middleware and into the spider.
 
         # Should return None or raise an exception.
         return None
 
-    def process_spider_output(self, response, result, spider):
+    def process_spider_output(self, _response, result, _spider):
         # Called with the results returned from the Spider, after
         # it has processed the response.
 
         # Must return an iterable of Request, or item objects.
-        for i in result:
-            yield i
+        yield from result
 
-    def process_spider_exception(self, response, exception, spider):
+    def process_spider_exception(self, _response, _exception, _spider):
         # Called when a spider or process_spider_input() method
         # (from other spider middleware) raises an exception.
 
         # Should return either None or an iterable of Request or item objects.
         pass
 
-    def process_start_requests(self, start_requests, spider):
+    def process_start_requests(self, start_requests, _spider):
         # Called with the start requests of the spider, and works
         # similarly to the process_spider_output() method, except
         # that it doesn’t have a response associated.
 
         # Must return only requests (not items).
-        for r in start_requests:
-            yield r
+        yield from start_requests
 
     def spider_opened(self, spider):
-        spider.logger.info("Spider opened: %s" % spider.name)
+        spider.logger.info(f'Spider opened: {spider.name}')
 
 
 class WatscraperDownloaderMiddleware:
@@ -68,7 +64,7 @@ class WatscraperDownloaderMiddleware:
         crawler.signals.connect(s.spider_opened, signal=signals.spider_opened)
         return s
 
-    def process_request(self, request, spider):
+    def process_request(self, _request, _spider):
         # Called for each request that goes through the downloader
         # middleware.
 
@@ -80,7 +76,7 @@ class WatscraperDownloaderMiddleware:
         #   installed downloader middleware will be called
         return None
 
-    def process_response(self, request, response, spider):
+    def process_response(self, _request, response, _spider):
         # Called with the response returned from the downloader.
 
         # Must either;
@@ -89,7 +85,7 @@ class WatscraperDownloaderMiddleware:
         # - or raise IgnoreRequest
         return response
 
-    def process_exception(self, request, exception, spider):
+    def process_exception(self, _request, _exception, _spider):
         # Called when a download handler or a process_request()
         # (from other downloader middleware) raises an exception.
 
@@ -100,4 +96,4 @@ class WatscraperDownloaderMiddleware:
         pass
 
     def spider_opened(self, spider):
-        spider.logger.info("Spider opened: %s" % spider.name)
+        spider.logger.info(f'Spider opened: {spider.name}')

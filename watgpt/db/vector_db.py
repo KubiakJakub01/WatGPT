@@ -2,9 +2,14 @@ from langchain.schema import Document
 from langchain_chroma import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
 
-from watgpt.constants import EMBEDDINGS_MODEL_NAME, UNIVERSITY_DOCS_COLLECTION, VECTOR_DATABASE_FILE
-from watgpt.utils import log_info
+from watgpt.constants import (
+    EMBEDDINGS_MODEL_NAME,
+    UNIVERSITY_DOCS_COLLECTION,
+    VECTOR_DATABASE_FILE,
+)
 from watgpt.db.models import Chunk  # The SQLAlchemy model for your chunk table
+from watgpt.utils import log_info
+
 
 class VectorDB:
     def __init__(
@@ -36,16 +41,16 @@ class VectorDB:
         # Check if the document is already in the vector store
         existing_docs = self.vector_store.get([str(chunk.chunk_id)])
         if existing_docs['ids']:
-            log_info(f"Chunk {chunk.chunk_id} already exists in vector DB. Skipping.")
+            log_info(f'Chunk {chunk.chunk_id} already exists in vector DB. Skipping.')
             return
 
         # Prepare metadata ensuring no None values exist (convert None to empty string)
         metadata = {
             'chunk_id': chunk.chunk_id,
-            'source_url': chunk.source_url if chunk.source_url is not None else "",
-            'file_url': chunk.file_url if chunk.file_url is not None else "",
-            'title': chunk.title if chunk.title is not None else "",
-            'date': str(chunk.date) if chunk.date is not None else "",
+            'source_url': chunk.source_url if chunk.source_url is not None else '',
+            'file_url': chunk.file_url if chunk.file_url is not None else '',
+            'title': chunk.title if chunk.title is not None else '',
+            'date': str(chunk.date) if chunk.date is not None else '',
         }
 
         # Convert to LangChain Document format
@@ -56,8 +61,7 @@ class VectorDB:
 
         # Add the document to Chroma
         self.vector_store.add_documents([document])
-        log_info(f"Chunk {chunk.chunk_id} added to ChromaDB.")
-
+        log_info(f'Chunk {chunk.chunk_id} added to ChromaDB.')
 
     def query(self, query: str, top_k: int = 3):
         """
