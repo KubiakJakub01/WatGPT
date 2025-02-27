@@ -1,10 +1,11 @@
 from typing import Optional
 
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text, func
-from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import DeclarativeBase, relationship
 
-Base: DeclarativeMeta = declarative_base()  # type: ignore
+
+class Base(DeclarativeBase):
+    pass
 
 
 class Chunk(Base):
