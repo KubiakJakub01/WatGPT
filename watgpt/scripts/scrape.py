@@ -5,15 +5,13 @@ import stat
 import subprocess
 from pathlib import Path
 
-from watgpt.db.sql_db import SqlDB
+from watgpt.constants import TARGET_GROUPS
+from watgpt.utils import create_marker_file, delete_marker_file, log_info
 
 
 def ensure_executable(script_path: Path) -> None:
-    """
-    Ensure that the given script has executable permissions.
-    """
+    """Ensure that the given script has executable permissions."""
     if not os.access(script_path, os.X_OK):
-        # Add execute permission for the owner, group, and others.
         st = os.stat(script_path)
         os.chmod(script_path, st.st_mode | stat.S_IEXEC)
 
@@ -26,34 +24,42 @@ def parse_args():
         '--only',
         type=str,
         default='',
-        help="""
-        Spider name to run (e.g., 'timetable' or 'all_files'). 
-        If empty, both spiders will run."
-        """,
+        help="""Spider name to run (e.g., 'timetable' or 'all_files').
+If empty, both spiders will run.""",
     )
     return parser.parse_args()
 
 
 def main(spider_name: str):
-    sql_db = SqlDB()
-    sql_db.init_db()
-    # The Bash script is located at: watgpt/scripts/run_scrapy.sh
-    # Since this file (scrape.py) is in the same folder, we can resolve it relative to __file__.
-    script_path = (Path(__file__).parent / 'run_scrapy.sh').resolve()
+    # Remove any existing marker file
+    delete_marker_file('scrape.done')
 
-    # Ensure the Bash script is executable so the user doesn't have to manually chmod it.
+    # Resolve path to run_scrapy.sh
+    script_path = (Path(__file__).parent / 'run_scrapy.sh').resolve()
     ensure_executable(script_path)
 
     if not script_path.exists():
         raise FileNotFoundError(f'Cannot find the script: {script_path}')
 
-    # Call the Bash script with or without a spider argument.
-    if spider_name:
-        print(f"Running spider '{spider_name}' via {script_path}")
+    if spider_name.lower() == 'timetable':
+        log_info(
+            f"Running spider '{spider_name}' with target groups '{TARGET_GROUPS}' via {script_path}"
+        )
+        subprocess.run([str(script_path), spider_name, TARGET_GROUPS], check=True)
+    elif spider_name:
+        log_info(f"Running spider '{spider_name}' via {script_path}")
         subprocess.run([str(script_path), spider_name], check=True)
     else:
-        print("No spider specified -> running both 'timetable' and 'all_files' spiders.")
-        subprocess.run([str(script_path)], check=True)
+        # If no spider specified, pass a keyword "both" and the target groups for timetable.
+        log_info(
+            f"""
+            No spider specified -> running both 'timetable' and 'all_files' 
+            spiders with target groups '{TARGET_GROUPS}'.
+            """
+        )
+        subprocess.run([str(script_path), 'both', TARGET_GROUPS], check=True)
+
+    create_marker_file('scrape.done')
 
 
 if __name__ == '__main__':

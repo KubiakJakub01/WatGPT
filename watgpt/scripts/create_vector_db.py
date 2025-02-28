@@ -8,7 +8,7 @@ from watgpt.constants import (
 )
 from watgpt.db.sql_db import SqlDB
 from watgpt.db.vector_db import VectorDB
-from watgpt.utils import log_info
+from watgpt.utils import create_marker_file, delete_marker_file, log_info
 
 
 def clear_database():
@@ -17,6 +17,8 @@ def clear_database():
 
 
 def main():
+    delete_marker_file('create_vector_db.done')
+
     # 1) Initialize tables (optional if not yet done)
     sql_db = SqlDB()
 
@@ -34,6 +36,7 @@ def main():
     for chunk in chunks_in_db:
         vector_db.add_chunk(chunk)
     log_info('All chunks added to ChromaDB.')
+    create_marker_file('create_vector_db.done')
 
 
 if __name__ == '__main__':

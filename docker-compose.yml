@@ -1,27 +1,96 @@
 services:
   create_db:
     image: watgpt:latest
-    container_name: watgpt_container
+    container_name: watgpt_create_db
+    command:
+      - sh
+      - -c 
+      - |
+        poetry run python -m watgpt.scripts.create_sql_db
+        chmod -R 777 /home/databases
+        echo '✅ DB created'
+        sleep infinity
     volumes:
       - ./wat_data:/home/wat_data
       - ./databases:/home/databases
-    ports:
-      - "8000:8000"
+      - ./logs:/home/logs
     environment:
       - PYTHONPATH=/home
-      - GROQ_API_KEY=your_key_here
-    command: 
+    healthcheck:
+      test: ["CMD", "test", "-f", "/home/databases/chunks.db"]
+      interval: 20s
+      timeout: 60s
+      retries: 3
+
+  scraping:
+    image: watgpt:latest
+    container_name: watgpt_scraping
+    command:
       - sh
-      - -c
+      - -c 
       - |
-        poetry run python -m watgpt.scripts.create_sql_db
-        echo "test"
-        echo '✅ 1) DB created...'
-        echo '🕷️ 2) Starting Scrapy...'
+        chmod -R 777 /home/databases
         poetry run python -m watgpt.scripts.scrape
-        echo '✅ 2) Scraping done...'
-        echo '🗄️ 3) Creating vector DB...'
+        echo '✅ Data scraped'
+        sleep infinity
+    volumes:
+      - ./wat_data:/home/wat_data
+      - ./databases:/home/databases
+      - ./logs:/home/logs
+    environment:
+      - PYTHONPATH=/home
+    depends_on:
+      create_db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "test", "-f", "/home/databases/scrape.done"]
+      interval: 50s
+      timeout: 3000s
+      retries: 60
+
+  create_vector_db:
+    image: watgpt:latest
+    container_name: watgpt_vector_db
+    command:
+      - sh
+      - -c 
+      - |
         poetry run python -m watgpt.scripts.create_vector_db
-        echo '✅ 3) Vector DB created...'
-        echo '🚀 4) Starting FastAPI...'
+        echo '✅ Vector DB created'
+        sleep infinity
+    volumes:
+      - ./wat_data:/home/wat_data
+      - ./databases:/home/databases
+      - ./logs:/home/logs
+    environment:
+      - PYTHONPATH=/home
+    depends_on:
+      scraping:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "test", "-f", "/home/databases/create_vector_db.done"]
+      interval: 50s
+      timeout: 3000s
+      retries: 60
+
+  api:
+    image: watgpt:latest
+    container_name: watgpt_api
+    command:
+      - sh
+      - -c 
+      - |
+        echo '✅ FastAPI created'
         poetry run uvicorn watgpt.api:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./wat_data:/home/wat_data
+      - ./databases:/home/databases
+      - ./logs:/home/logs
+    environment:
+      - PYTHONPATH=/home
+      - GROQ_API_KEY=${GROQ_API_KEY}
+    depends_on:
+      create_vector_db:
+        condition: service_healthy

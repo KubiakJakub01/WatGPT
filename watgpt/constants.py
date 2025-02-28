@@ -19,7 +19,8 @@ LLM_RAG_SYSTEM_PROMPT = 'llm_rag_system_prompt'
 LLM_QUERY_EXTRACTION_PROMPT = 'llm_query_extraction_prompt'
 LLM_PROVIDER = 'groq'
 LLM_MODEL_NAME = 'llama3-8b-8192'
-# ---- Values for Spider
-ALLOWED_PATHS = (r'wydzial/ksztalcenie/informacje-studenci/informator-1-rok',)
-DENIED_PATHS = (r'karty-informacyjne-przedmiotow',)
+# ---- Values for Scrapy
+ALLOWED_PATHS = (r'wydzial/ksztalcenie/',)
+DENIED_PATHS = (r'karty-informacyjne-przedmiotow', r'/kursy-mon')
 DENIED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp']
+TARGET_GROUPS = 'WCY24IV1N2'

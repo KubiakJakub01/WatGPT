@@ -1,4 +1,3 @@
-# watgpt/scripts/create_chunk_db.py
 import os
 
 from watgpt.constants import CHUNKS_DATABASE_FILE

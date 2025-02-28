@@ -9,6 +9,7 @@ ENV PYTHONUNBUFFERED=1 \
 
 # Set working directory
 WORKDIR /home
+RUN mkdir -p /home/databases && chmod -R 777 /home/databases
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
