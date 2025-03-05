@@ -81,13 +81,14 @@ def convert_natural_date_to_iso(raw_date: str) -> str | None:
 
 
 def delete_marker_file(filename: str):
-    marker_path = Path('databases') / filename
+    marker_path = Path('databases') / 'healthcheck' / filename
     if marker_path.exists():
         marker_path.unlink()
         log_info(f'Removed old marker file: {marker_path}')
 
 
 def create_marker_file(filename: str):
-    marker_path = Path('databases') / filename
+    marker_path = Path('databases') / 'healthcheck' / filename
+    marker_path.parent.mkdir(parents=True, exist_ok=True)
     marker_path.write_text('Script finished his work successfully')
     log_info(f'Marker file created at {marker_path}')

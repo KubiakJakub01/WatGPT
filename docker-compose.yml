@@ -43,7 +43,7 @@ services:
       create_db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "test", "-f", "/home/databases/scrape.done"]
+      test: ["CMD", "test", "-f", "/home/databases/healthcheck/scrape.done"]
       interval: 50s
       timeout: 3000s
       retries: 60
@@ -68,7 +68,7 @@ services:
       scraping:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "test", "-f", "/home/databases/create_vector_db.done"]
+      test: ["CMD", "test", "-f", "/home/databases/healthcheck/create_vector_db.done"]
       interval: 50s
       timeout: 3000s
       retries: 60
