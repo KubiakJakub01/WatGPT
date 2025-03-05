@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import argparse
 import os
 import stat
@@ -18,14 +17,20 @@ def ensure_executable(script_path: Path) -> None:
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Run 'timetable' and/or 'all_files' spiders via the Bash script."
+        description="""
+        Run one or both spiders: 'timetable' - for scraping timetable data 
+        and/or 'all_files' - for scraping data from WAT websites and files.
+        """
     )
     parser.add_argument(
-        '--only',
+        '--spider_name',
         type=str,
-        default='',
-        help="""Spider name to run (e.g., 'timetable' or 'all_files').
-If empty, both spiders will run.""",
+        choices=['timetable', 'all_files', 'both'],
+        default='both',
+        help=(
+            "Which spider(s) to run. Possible values: 'timetable', "
+            "'all_files', or 'both'. Defaults to 'both' if not specified."
+        ),
     )
     return parser.parse_args()
 
@@ -64,4 +69,4 @@ def main(spider_name: str):
 
 if __name__ == '__main__':
     args = parse_args()
-    main(args.only)
+    main(args.spider_name)

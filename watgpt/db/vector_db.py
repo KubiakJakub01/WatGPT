@@ -2,13 +2,13 @@ from langchain.schema import Document
 from langchain_chroma import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
 
-from watgpt.constants import (
+from ..constants import (
     EMBEDDINGS_MODEL_NAME,
     UNIVERSITY_DOCS_COLLECTION,
     VECTOR_DATABASE_FILE,
 )
-from watgpt.db.models import Chunk  # The SQLAlchemy model for your chunk table
-from watgpt.utils import log_info
+from ..utils import log_info
+from .models import Chunk
 
 
 class VectorDB:

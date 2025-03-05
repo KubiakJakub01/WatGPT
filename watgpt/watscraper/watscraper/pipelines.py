@@ -1,16 +1,18 @@
-# Define your item pipelines here
-#
-# Don't forget to add your pipeline to the ITEM_PIPELINES setting
-# See: https://docs.scrapy.org/en/latest/topics/item-pipeline.html
+# pylint: disable=too-few-public-methods
+"""
+Define your item pipelines here
+Don't forget to add your pipeline to the ITEM_PIPELINES setting
+See: https://docs.scrapy.org/en/latest/topics/item-pipeline.html
+"""
 
-
-import os
 from datetime import datetime
+from pathlib import Path
 from urllib.parse import urlparse
 
 from scrapy.pipelines.files import FilesPipeline
 
 from watgpt.db.sql_db import SqlDB
+from watgpt.utils import log_info
 from watgpt.watscraper.watscraper.text_chunker import TextChunker
 from watscraper.items import GroupItem, PageContentItem, TimetableItem
 
@@ -36,13 +38,13 @@ class GroupPipeline:
         self.db = SqlDB()
         self.groups_cache = {}
 
-    def process_item(self, item, spider):
+    def process_item(self, item, _spider):
         if isinstance(item, GroupItem):
             group_code = item.get('group_code')
             if group_code and group_code not in self.groups_cache:
                 group_id = self.db.insert_group(group_code)  # new SQLAlchemy method
                 self.groups_cache[group_code] = group_id
-                spider.logger.info(f"Inserted group '{group_code}' with id {group_id}")
+                log_info(f"Inserted group '{group_code}' with id {group_id}")
         return item
 
 
@@ -51,17 +53,17 @@ class TimetablePipeline:
         self.db = SqlDB()
         self.groups_cache = {}
 
-    def process_item(self, item, spider):
+    def process_item(self, item, _spider):
         if isinstance(item, TimetableItem):
             date_str = item.get('date')
             try:
                 dt = datetime.strptime(date_str, '%Y_%m_%d')
                 formatted_date = dt.strftime('%Y-%m-%d')
             except ValueError as e:
-                spider.logger.error(f"Error parsing date '{date_str}': {e}")
+                log_info(f"Error parsing date '{date_str}': {e}")
                 formatted_date = date_str  # Fallback to original string if conversion fails
 
-            group_code = item.get('group_code') or 'WCY24IX3S0'
+            group_code = item.get('group_code', 'WCY24IX3S0')
             if group_code not in self.groups_cache:
                 group_id = self.db.insert_group(group_code)
                 self.groups_cache[group_code] = group_id
@@ -83,7 +85,7 @@ class TimetablePipeline:
                 building=item.get('building'),
                 info=item.get('info'),
             )
-            spider.logger.info(f"Inserted lesson with id {lesson_id} for group '{group_code}'")
+            log_info(f"Inserted lesson with id {lesson_id} for group '{group_code}'")
         return item
 
 
@@ -132,14 +134,14 @@ class CustomFilesPipeline(FilesPipeline):
     def file_path(self, request, response=None, info=None, *, item=None):
         # Parse the URL to get the original file name without query parameters.
         parsed = urlparse(request.url)
-        original_filename = os.path.basename(parsed.path)
+        original_filename = Path(parsed.path).name
 
-        # Get the desired directory name from the item (set by your spider).
+        # Get the desired directory name from the item (set by spider).
         if item is not None:
             dir_name = item.get('dir_name', '')
             if dir_name:
                 # Return path as: <dir_name>/<original_filename>
-                return os.path.join(dir_name, original_filename)
+                return str(Path(dir_name) / original_filename)
         return original_filename
 
     def item_completed(self, results, item, info):
@@ -150,13 +152,13 @@ class CustomFilesPipeline(FilesPipeline):
                 local_path = file_info['path']
                 downloaded_url = file_info['url']
                 source_page_url = item.get('origin_url', '')
-                file_text = extract_text_from_file(os.path.join(self.store.basedir, local_path))
+                file_text = extract_text_from_file(str(Path(self.store.basedir) / local_path))
                 # Chunk the extracted text.
                 chunker = TextChunker(tokenizer_model='gpt2')
                 text_chunks = chunker.chunk_text_token_based(
                     file_text, max_tokens=1024, overlap_tokens=20
                 )
-                file_name = os.path.basename(local_path)
+                file_name = Path(local_path).name
 
                 for text_chunk in text_chunks:
                     self.db.create_chunk(

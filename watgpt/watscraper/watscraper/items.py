@@ -6,12 +6,6 @@
 import scrapy
 
 
-class WatscraperItem(scrapy.Item):
-    # define the fields for your item here like:
-    # name = scrapy.Field()
-    pass
-
-
 class TimetableItem(scrapy.Item):
     date = scrapy.Field()
     block_id = scrapy.Field()

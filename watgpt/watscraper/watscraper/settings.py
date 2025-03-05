@@ -6,10 +6,6 @@
 #     https://docs.scrapy.org/en/latest/topics/settings.html
 #     https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 #     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
-
-FILES_STORE = '../../wat_data'
-ALLOWED_SUBPATHS = ['pl/wydzial/ksztalcenie']
-# FILES_STORE = "/home/maciek/WatGPT/wat_data"
 BOT_NAME = 'watscraper'
 
 SPIDER_MODULES = ['watscraper.spiders']

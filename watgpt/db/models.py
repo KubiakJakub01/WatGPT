@@ -1,4 +1,4 @@
-# pylint: disable=unsubscriptable-object
+# pylint: disable=unsubscriptable-object,too-few-public-methods, not-callable
 from typing import Optional
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
@@ -26,7 +26,6 @@ class BlockHours(Base):
     block_id: Mapped[str] = mapped_column(String, primary_key=True)
     start_time: Mapped[str] = mapped_column(String, nullable=False)
     end_time: Mapped[str] = mapped_column(String, nullable=False)
-    # Define the reverse relationship:
     lessons: Mapped[list['Lesson']] = relationship('Lesson', back_populates='block')
 
 
@@ -35,7 +34,6 @@ class Group(Base):
 
     group_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     group_code: Mapped[str] = mapped_column(String, nullable=False, unique=True)
-    # Add the missing relationship property:
     lessons: Mapped[list['Lesson']] = relationship('Lesson', back_populates='group')
 
 

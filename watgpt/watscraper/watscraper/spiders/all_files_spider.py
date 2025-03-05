@@ -1,18 +1,24 @@
-# all_files_crawl_spider.py
 import os
 from urllib.parse import urljoin, urlparse
 
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import CrawlSpider, Rule
 
-from watgpt.constants import ALLOWED_PATHS, DENIED_EXTENSIONS, DENIED_PATHS
+from watgpt.constants import (
+    ALLOWED_DOMAINS,
+    ALLOWED_EXTENSIONS,
+    ALLOWED_PATHS,
+    DENIED_EXTENSIONS,
+    DENIED_PATHS,
+    START_URLS,
+)
 from watscraper.items import FileDownloadItem, PageContentItem
 
 
 class AllFilesSpider(CrawlSpider):
     name = 'all_files'
-    allowed_domains = ['wcy.wat.edu.pl']
-    start_urls = ['https://www.wcy.wat.edu.pl/wydzial/ksztalcenie/informacje-studenci']
+    allowed_domains = ALLOWED_DOMAINS
+    start_urls = START_URLS
 
     rules = (
         Rule(
@@ -66,26 +72,6 @@ class AllFilesSpider(CrawlSpider):
     def is_file_link(self, url: str) -> bool:
         parsed = urlparse(url)
         path = parsed.path
-        ALLOWED_EXTENSIONS = {
-            'pdf',
-            'doc',
-            'docx',
-            'odt',
-            'rtf',
-            'txt',
-            'xls',
-            'xlsx',
-            'ods',
-            'csv',
-            'ppt',
-            'pptx',
-            'odp',
-            'zip',
-            'rar',
-            '7z',
-            'tar',
-            'gz',
-        }
         ext = os.path.splitext(path)[1].lstrip('.').lower()
         return ext in ALLOWED_EXTENSIONS
 

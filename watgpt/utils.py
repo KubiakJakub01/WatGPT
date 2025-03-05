@@ -89,5 +89,5 @@ def delete_marker_file(filename: str):
 
 def create_marker_file(filename: str):
     marker_path = Path('databases') / filename
-    marker_path.write_text('Scraping completed successfully')
+    marker_path.write_text('Script finished his work successfully')
     log_info(f'Marker file created at {marker_path}')
