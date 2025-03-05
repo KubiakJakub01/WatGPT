@@ -1,5 +1,9 @@
 # WatGPT
-The Military University of Technology in Warsaw chatbot
+The Military University of Technology in Warsaw chatbot.
+
+High level overview of this project:
+![high_level_overview](https://github.com/user-attachments/assets/b2cf416f-4a59-4dcf-ad89-a69ebd247e06)
+
 
 ## Installation
 
@@ -100,20 +104,21 @@ To run the project with Docker Compose, use the following command:
 docker compose up
 ```
 It will sequentially:
-####1. Run the create_db service that will:
+
+#### 1. Run the create_db service that will:
 - Create chunks.db (SQLite database).
 - Extract text from PDFs in wat_data/ and store in pdf_chunks.
 - Scrape timetable data from the provided URL and populate timetable tables.
 
-####2. Run the scrape service that will:
+#### 2. Run the scrape service that will:
 - Scrape all the timetable data for each group and put it into SQLite database
 - Scrape text from websites in https://www.wcy.wat.edu.pl/  domain and put it into SQLite database
 - Download pdf files from websites in https://www.wcy.wat.edu.pl/ domain extract text from them and put it into SQLite database
 
-####3. Run the create_vector_db service that will:
+#### 3. Run the create_vector_db service that will:
 - Fetch all the text data from SQLite database convert it to vector embeddings and store it in Vector database
 
-####4. Run the api service that will:
+#### 4. Run the api service that will:
 - Setup FastAPI and expose endpoints for using the chat
 
 After running docker-compose up for the first time if you changed something in code and don't wanna to create databases and scrape data again, to rerun the app you can just run:
@@ -177,29 +182,30 @@ Currently the default address and port are http://localhost:8000/health
 	- Create chunks.db (SQLite database). and create default tables
 
 ### Scraper settings
+
 1. **Settings for scrapy:**
-For scraping data we are using scrapy library, you can configure what to scrape in *constants.py* file by
-changing the following properties:
-```bash
-# ---- Values for Scrapy
-ALLOWED_PATHS = (r'wydzial/ksztalcenie/',)
-DENIED_PATHS = (r'karty-informacyjne-przedmiotow',r'/kursy-mon')
-DENIED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp']
-TARGET_GROUPS = "WCY24IV1N2"
-```
-	- **ALLOWED_PATHS** - checks if given address contain specified string if it does then it will scrape it, so for the example values it will scrape data and files from:
-		- https://www.wcy.wat.edu.pl/pl/wydzial/ksztalcenie/informacje-studenci/kalendarz-akademicki
-
-	but it wont scrape data from:
-
-		- https://www.wcy.wat.edu.pl/wydzial/aktualnosci/wszystkie
-		
-	- **DENIED_PATHS** - checks if given address contain specified string if it does then it will **not** scrape it, so for so for the example values it will not scrape data and files from:
-		- https://www.wcy.wat.edu.pl/wydzial/ksztalcenie/kursy-mon
-
-	- **DENIED_EXTENSIONS** - checks if file have one of the listed extensions if yes then it will not download it
-
-	- **TARGET_GROUPS** - list of groups for scraping timetable data, if list is empty it will scrape data for ALL the groups (it will take a while)
+	For scraping data we are using scrapy library, you can configure what to scrape in *constants.py* file by
+	changing the following properties:
+	```bash
+	# ---- Values for Scrapy
+	ALLOWED_PATHS = (r'wydzial/ksztalcenie/',)
+	DENIED_PATHS = (r'karty-informacyjne-przedmiotow',r'/kursy-mon')
+	DENIED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp']
+	TARGET_GROUPS = "WCY24IV1N2"
+	```
+		- **ALLOWED_PATHS** - checks if given address contain specified string if it does then it will scrape it, so for the example values it will scrape data and files from:
+			- https://www.wcy.wat.edu.pl/pl/wydzial/ksztalcenie/informacje-studenci/kalendarz-akademicki
+	
+		but it wont scrape data from:
+	
+			- https://www.wcy.wat.edu.pl/wydzial/aktualnosci/wszystkie
+			
+		- **DENIED_PATHS** - checks if given address contain specified string if it does then it will **not** scrape it, so for so for the example values it will not scrape data and files from:
+			- https://www.wcy.wat.edu.pl/wydzial/ksztalcenie/kursy-mon
+	
+		- **DENIED_EXTENSIONS** - checks if file have one of the listed extensions if yes then it will not download it
+	
+		- **TARGET_GROUPS** - list of groups for scraping timetable data, if list is empty it will scrape data for ALL the groups (it will take a while)
 	
 2. **Running the scrape script**:
 To run the script for scraping data run the following script:
