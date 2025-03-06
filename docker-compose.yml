@@ -1,13 +1,96 @@
 services:
-  watgpt:
-    build: .
-    container_name: watgpt
+  create_db:
+    image: watgpt:latest
+    container_name: watgpt_create_db
+    command:
+      - sh
+      - -c 
+      - |
+        poetry run python -m watgpt.scripts.create_sql_db
+        chmod -R 777 /home/databases
+        echo '✅ DB created'
+        sleep infinity
     volumes:
+      - ./wat_data:/home/wat_data
       - ./databases:/home/databases
-    expose:
-      - "8000"
+      - ./logs:/home/logs
+    environment:
+      - PYTHONPATH=/home
+    healthcheck:
+      test: ["CMD", "test", "-f", "/home/databases/chunks.db"]
+      interval: 20s
+      timeout: 60s
+      retries: 3
+
+  scraping:
+    image: watgpt:latest
+    container_name: watgpt_scraping
+    command:
+      - sh
+      - -c 
+      - |
+        chmod -R 777 /home/databases
+        poetry run python -m watgpt.scripts.scrape
+        echo '✅ Data scraped'
+        sleep infinity
+    volumes:
+      - ./wat_data:/home/wat_data
+      - ./databases:/home/databases
+      - ./logs:/home/logs
+    environment:
+      - PYTHONPATH=/home
+    depends_on:
+      create_db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "test", "-f", "/home/databases/healthcheck/scrape.done"]
+      interval: 50s
+      timeout: 3000s
+      retries: 60
+
+  create_vector_db:
+    image: watgpt:latest
+    container_name: watgpt_vector_db
+    command:
+      - sh
+      - -c 
+      - |
+        poetry run python -m watgpt.scripts.create_vector_db
+        echo '✅ Vector DB created'
+        sleep infinity
+    volumes:
+      - ./wat_data:/home/wat_data
+      - ./databases:/home/databases
+      - ./logs:/home/logs
+    environment:
+      - PYTHONPATH=/home
+    depends_on:
+      scraping:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "test", "-f", "/home/databases/healthcheck/create_vector_db.done"]
+      interval: 50s
+      timeout: 3000s
+      retries: 60
+
+  api:
+    image: watgpt:latest
+    container_name: watgpt_api
+    command:
+      - sh
+      - -c 
+      - |
+        echo '✅ FastAPI created'
+        poetry run uvicorn watgpt.api:app --host 0.0.0.0 --port 8000
     ports:
       - "8000:8000"
-    env_file:
-      - .env
-    restart: always
+    volumes:
+      - ./wat_data:/home/wat_data
+      - ./databases:/home/databases
+      - ./logs:/home/logs
+    environment:
+      - PYTHONPATH=/home
+      - GROQ_API_KEY=${GROQ_API_KEY}
+    depends_on:
+      create_vector_db:
+        condition: service_healthy

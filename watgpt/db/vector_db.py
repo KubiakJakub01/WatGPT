@@ -2,9 +2,13 @@ from langchain.schema import Document
 from langchain_chroma import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
 
-from ..constants import EMBEDDINGS_MODEL_NAME, UNIVERSITY_DOCS_COLLECTION, VECTOR_DATABASE_FILE
+from ..constants import (
+    EMBEDDINGS_MODEL_NAME,
+    UNIVERSITY_DOCS_COLLECTION,
+    VECTOR_DATABASE_FILE,
+)
 from ..utils import log_info
-from .models import ChunkRow
+from .models import Chunk
 
 
 class VectorDB:
@@ -30,30 +34,32 @@ class VectorDB:
             embedding_function=self.embedding_function,
         )
 
-    def add_chunk(self, chunk: ChunkRow):
+    def add_chunk(self, chunk: Chunk):
         """
-        Add a document chunk to ChromaDB if it doesn't already exist.
-
-        :param chunk: ChunkRow containing text and metadata.
+        Add a Chunk model instance to ChromaDB if it doesn't already exist.
         """
-        # Check if chunk already exists
+        # Check if the document is already in the vector store
         existing_docs = self.vector_store.get([str(chunk.chunk_id)])
-        if existing_docs['ids']:  # If IDs exist, chunk is already present
-            log_info(f'Chunk {chunk.chunk_id} already exists. Skipping.')
+        if existing_docs['ids']:
+            log_info(f'Chunk {chunk.chunk_id} already exists in vector DB. Skipping.')
             return
+
+        # Prepare metadata ensuring no None values exist (convert None to empty string)
+        metadata = {
+            'chunk_id': chunk.chunk_id,
+            'source_url': chunk.source_url if chunk.source_url is not None else '',
+            'file_url': chunk.file_url if chunk.file_url is not None else '',
+            'title': chunk.title if chunk.title is not None else '',
+            'date': str(chunk.date) if chunk.date is not None else '',
+        }
 
         # Convert to LangChain Document format
         document = Document(
             page_content=chunk.content,
-            metadata={
-                'chunk_id': chunk.chunk_id,
-                'heading': chunk.heading,
-                'source_file': chunk.source_file,
-                'page_num': chunk.page_number,
-            },
+            metadata=metadata,
         )
 
-        # Add document to Chroma
+        # Add the document to Chroma
         self.vector_store.add_documents([document])
         log_info(f'Chunk {chunk.chunk_id} added to ChromaDB.')
 
@@ -63,7 +69,7 @@ class VectorDB:
 
         :param query: User query string.
         :param top_k: Number of top matches to retrieve.
-        :return: List of relevant chunk texts.
+        :return: List of Document objects (LangChain).
         """
         results = self.vector_store.similarity_search(query, k=top_k)
         return results

@@ -3,12 +3,10 @@ import string
 from pathlib import Path
 
 import fitz
-from langchain.docstore.document import Document
 
-from ..utils import log_debug, log_info
+from watgpt.utils import log_debug, log_info
 
-# A quick regex to detect something like DD.MM.YYYY
-# (and optionally the trailing " r." or " r" etc.)
+# A quick regex to detect something like DD.MM.YYYY (and optionally trailing " r." or " r")
 DATE_PATTERN = re.compile(r'^\d{1,2}\.\d{1,2}\.\d{4}(\s*r\.?)?$')
 
 
@@ -19,7 +17,7 @@ def extract_header_and_rows(pdf_path: str | Path):
       - Rows from each page using a row threshold of <12 in y-diff.
       - Merges multi-line rows by your continuation rule.
 
-    Returns: (header_text, [row_text, row_text, ...])
+    Returns: (header_text, [row_dict, row_dict, ...])
     """
     doc = fitz.open(pdf_path)
     all_rows = []
@@ -70,7 +68,10 @@ def detect_header(page, min_font_size=12):
     return None
 
 
-def parse_page_into_rows(page, row_diff_threshold=12, x_split=140):  # pylint: disable=too-many-branches
+def parse_page_into_rows(page, row_diff_threshold=12, x_split=140):
+    """
+    Parse a page into row dictionaries containing page_number and row text.
+    """
     page_number = page.number
     blocks = page.get_text('dict')['blocks']
     spans = []
@@ -85,7 +86,7 @@ def parse_page_into_rows(page, row_diff_threshold=12, x_split=140):  # pylint: d
                         y0 = span['bbox'][1]
                         spans.append((x0, y0, text))
 
-    # (Unchanged) Sort spans top->bottom, left->right
+    # Sort spans top-to-bottom, left-to-right
     spans.sort(key=lambda x: (x[1], x[0]))
 
     log_debug(f'Parsing page {page_number} with {len(spans)} spans')
@@ -96,11 +97,9 @@ def parse_page_into_rows(page, row_diff_threshold=12, x_split=140):  # pylint: d
 
     for x0, y0, text in spans:
         if last_y is None:
-            # first span in this page
             current_row.append((x0, y0, text))
             last_y = y0
         else:
-            # check if new row
             if (y0 - last_y) >= row_diff_threshold:
                 rows_of_spans.append(current_row)
                 log_debug(f' Finalized row => {current_row}')
@@ -114,13 +113,13 @@ def parse_page_into_rows(page, row_diff_threshold=12, x_split=140):  # pylint: d
         rows_of_spans.append(current_row)
         log_debug(f' Finalized row => {current_row}')
 
-    # Convert each list of spans -> single "row text" + store page_number
+    # Convert each list of spans into a dict with row text and page number.
     row_dicts = []
     for row_spans in rows_of_spans:
         row_text = finalize_row_columns(row_spans, x_split)
         row_dicts.append(
             {
-                'page_number': page_number,  # <--- store the page index
+                'page_number': page_number,
                 'text': row_text,
             }
         )
@@ -134,15 +133,7 @@ def parse_page_into_rows(page, row_diff_threshold=12, x_split=140):  # pylint: d
 
 def finalize_row_columns(row_spans, x_split=100):
     """
-    Splits row_spans into:
-      left column: (x,y,text) with x < x_split
-      right column: (x,y,text) with x >= x_split
-
-    Sort each column by y ascending (if tie, by x).
-    Join each column's text with spaces. Then final row is "left_text | right_text".
-    If the right column text contains exactly 2 date-like items, join them with ' - '.
-
-    Finally, collapse extra spaces so we don't get weird spacing in words.
+    Splits row_spans into left and right columns and builds a row string.
     """
     left_column = []
     right_column = []
@@ -153,34 +144,24 @@ def finalize_row_columns(row_spans, x_split=100):
         else:
             right_column.append((x, y, t))
 
-    # Sort each column top->bottom, left->right
     left_column.sort(key=lambda s: (s[1], s[0]))
     right_column.sort(key=lambda s: (s[1], s[0]))
 
-    # Join left column text
     left_text = ''.join(item[2] for item in left_column)
-
-    # Join right column text, with optional dash for two date-like items
     right_texts = [item[2] for item in right_column]
     if len(right_texts) == 2 and all(DATE_PATTERN.search(rt) for rt in right_texts):
         right_text = f'{right_texts[0]} - {right_texts[1]}'
     else:
         right_text = ' '.join(right_texts)
 
-    # Build the raw row string
     row_str = f'{left_text} | {right_text}'
-
-    # Now collapse multiple spaces to a single space
-    # This also helps if the PDF introduced weird breaks or spacing.
     row_str = re.sub(r'\s+', ' ', row_str).strip()
-
     return row_str
 
 
 def is_continuation(row: list[str]) -> bool:
     """
-    Return True if row[0] starts with a digit or a lowercase letter,
-    meaning it's a continuation line.
+    Return True if row[0] starts with a digit or a lowercase letter.
     """
     if not row:
         return False
@@ -188,20 +169,16 @@ def is_continuation(row: list[str]) -> bool:
     if not first_cell:
         return False
     first_char = first_cell[0]
-    # If first_char is a digit or a lowercase letter
     return first_char.isdigit() or (first_char in string.ascii_lowercase)
 
 
 def merge_multiline_rows(rows: list[dict]) -> list[dict]:
     """
-    If the next row's text starts with a digit/lowercase,
-    append that text to the previous row's text.
-    We'll store the earliest page_number for the merged chunk.
+    Merge rows when the next row's text starts with a digit/lowercase.
     """
     merged_rows: list[dict] = []
     for row in rows:
         text = row['text']
-
         if not merged_rows:
             merged_rows.append(row)
         else:
@@ -213,83 +190,14 @@ def merge_multiline_rows(rows: list[dict]) -> list[dict]:
     return merged_rows
 
 
-def build_table_chunks(header_text, rows: list[dict], chunk_size=5):
+def extract_calendar_text(pdf_path: str | Path) -> str:
     """
-    Now `rows` is a list of dicts: {"page_number": int, "text": str}
-    We group them into chunks of size=5, build Documents with
-    metadata = { "header": header_text, "page_number": earliest_of_chunk }
+    Simplified single-method extraction for calendar PDFs.
+
+    Uses all the read_calendar.py methods but returns a single aggregated text
+    (header plus all merged row texts) as one string.
     """
-    docs = []
-    current_batch = []
-    for row in rows:
-        current_batch.append(row)
-        if len(current_batch) == chunk_size:
-            doc = create_doc_from_rows(header_text, current_batch)
-            docs.append(doc)
-            current_batch = []
-
-    # leftover
-    if current_batch:
-        doc = create_doc_from_rows(header_text, current_batch)
-        docs.append(doc)
-
-    return docs
-
-
-def create_doc_from_rows(header_text, row_batch: list[dict]) -> Document:
-    """
-    row_batch is a list of dicts: [{"page_number": X, "text": "..."}]
-    We'll combine all "text" with newlines, and pick the earliest page_number.
-    """
-    pages = [r['page_number'] for r in row_batch]
-    earliest_page = min(pages) if pages else None
-
-    # Combine the texts
-    combined_texts = [r['text'] for r in row_batch]
-    chunk_text = '\n'.join(combined_texts)
-
-    return Document(
-        page_content=chunk_text, metadata={'header': header_text, 'page_number': earliest_page}
-    )
-
-
-def save_docs_to_txt(docs: list[Document], output_file: str):
-    with open(output_file, 'w', encoding='utf-8') as f:
-        for i, doc in enumerate(docs, start=1):
-            heading = doc.metadata.get('header', 'NONE')
-            f.write(f'--- Chunk {i} ---\n')
-            f.write(f'HEADING: {heading}\n')
-            f.write(f'CONTENT:\n{doc.page_content}\n\n')
-
-
-def extract_pdf_records(pdf_path: str | Path) -> list[dict]:
-    """
-    1) Extract the header and parse row dicts (with page_number, text).
-    2) Merge multiline.
-    3) Build chunked Documents, each with earliest page in metadata.
-    4) Convert each Document into DB-friendly dict.
-    """
-    # 1) Extract
     header_text, row_dicts = extract_header_and_rows(pdf_path)
-    # Now row_dicts is a list of {"page_number": int, "text": "..."}
-
-    # 2) Merge
-    merged = merge_multiline_rows(row_dicts)
-
-    # 3) Build docs
-    docs = build_table_chunks(header_text, merged, chunk_size=5)
-
-    # 4) Convert each Document to a DB-friendly dict
-    records = []
-    for doc in docs:
-        record = {
-            'chunk_id': None,
-            'heading': doc.metadata.get('header', 'NONE'),
-            'content': doc.page_content,
-            'source_file': pdf_path,
-            'page_number': doc.metadata.get('page_number'),  # <--- now we have it
-            'created_at': None,
-        }
-        records.append(record)
-
-    return records
+    # Join the header and each row's text into a single text block.
+    all_text = header_text + '\n' + '\n'.join(row['text'] for row in row_dicts)
+    return all_text

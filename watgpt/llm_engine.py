@@ -13,7 +13,7 @@ from .constants import (
     LLM_RAG_SYSTEM_PROMPT,
     PROMPTS_FILE,
 )
-from .db import ChunkDB, VectorDB
+from .db import SqlDB, VectorDB
 from .utils import convert_natural_date_to_iso, load_prompt, log_debug
 
 
@@ -25,7 +25,7 @@ class LLMEngine:
         self.provider = provider.lower()
         self.model = model
         self.vector_db = VectorDB()
-        self.chunk_db = ChunkDB()
+        self.chunk_db = SqlDB()
         self.memory = ConversationBufferMemory(memory_key='chat_history', return_messages=True)
 
         self.llm = init_chat_model(self.model, model_provider=self.provider)
@@ -43,7 +43,10 @@ class LLMEngine:
         :return: Extracted data in format {"group_code": str | None, "raw_date": str | None}
         """
         response = self.llm.invoke(
-            [SystemMessage(content=self.query_extraction_prompt), HumanMessage(content=query)]
+            [
+                SystemMessage(content=self.query_extraction_prompt),
+                HumanMessage(content=query),
+            ]
         )
 
         try:
@@ -82,7 +85,14 @@ class LLMEngine:
                     ]
                 )
                 log_debug(f'Found timetable info: {timetable_info}')
-                headers = ['Data', 'Blok', 'Kod przedmiotu', 'Nauczyciel', 'Sala', 'Budynek']
+                headers = [
+                    'Data',
+                    'Blok',
+                    'Kod przedmiotu',
+                    'Nauczyciel',
+                    'Sala',
+                    'Budynek',
+                ]
                 lessons_data = [
                     [
                         lesson.lesson_date,
@@ -143,9 +153,13 @@ class LLMEngine:
         # Store conversation history
         self.memory.save_context({'input': query}, {'output': str(response.content)})
         sources = [
-            f'{doc.metadata.get("source_file", None)}:{doc.metadata.get("page_num", None)}'
+            f"""
+            {doc.metadata.get('title', 'No Title')} - {doc.metadata.get('source_url', 'No URL')} 
+            - {doc.metadata.get('file_url', 'No URL')}
+            """
             for doc in results
         ]
+
         formatted_response = f'{response.content}\nŹródła: {sources}'
 
         log_debug(f'Response: {formatted_response}')

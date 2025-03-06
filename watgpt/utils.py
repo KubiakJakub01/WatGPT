@@ -9,9 +9,14 @@ import yaml
 
 from .constants import LLM_RAG_SYSTEM_PROMPT, PROMPTS_FILE
 
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+LOGS_DIR = PROJECT_ROOT / 'logs'
+LOGS_DIR.mkdir(parents=True, exist_ok=True)
+LOG_FILE = LOGS_DIR / 'debug.log'
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-file_handler = logging.FileHandler('debug.log', mode='w', encoding='utf-8')
+file_handler = logging.FileHandler(str(LOG_FILE), mode='w', encoding='utf-8')
 file_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(message)s'))
 file_handler.setLevel(logging.DEBUG)
 handler = logging.StreamHandler()
@@ -73,3 +78,17 @@ def convert_natural_date_to_iso(raw_date: str) -> str | None:
     parsed_date = dateparser.parse(raw_date, settings={'RELATIVE_BASE': today})
 
     return parsed_date.strftime('%Y_%m_%d') if parsed_date else None
+
+
+def delete_marker_file(filename: str):
+    marker_path = Path('databases') / 'healthcheck' / filename
+    if marker_path.exists():
+        marker_path.unlink()
+        log_info(f'Removed old marker file: {marker_path}')
+
+
+def create_marker_file(filename: str):
+    marker_path = Path('databases') / 'healthcheck' / filename
+    marker_path.parent.mkdir(parents=True, exist_ok=True)
+    marker_path.write_text('Script finished his work successfully')
+    log_info(f'Marker file created at {marker_path}')

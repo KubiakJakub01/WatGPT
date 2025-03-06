@@ -1,6 +1,10 @@
 import argparse
 
-from ..constants import EMBEDDINGS_MODEL_NAME, UNIVERSITY_DOCS_COLLECTION, VECTOR_DATABASE_FILE
+from ..constants import (
+    EMBEDDINGS_MODEL_NAME,
+    UNIVERSITY_DOCS_COLLECTION,
+    VECTOR_DATABASE_FILE,
+)
 from ..db import VectorDB
 from ..utils import log_info
 
