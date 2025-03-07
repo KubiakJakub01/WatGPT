@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState } from "react";
 import {
   Box,
   TextField,
@@ -9,35 +9,29 @@ import {
   Paper,
 } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
+import axios from "axios";
 
 function App() {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
-  const ws = useRef(null);
 
-  useEffect(() => {
-    ws.current = new WebSocket("ws://localhost:5000");
-
-    ws.current.onmessage = (event) => {
-      const newMessage = event.data;
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        { text: newMessage, sender: "server" },
-      ]);
-    };
-
-    return () => {
-      ws.current.close();
-    };
-  }, []);
-
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (message.trim()) {
-      ws.current.send(message);
       setMessages((prevMessages) => [
         ...prevMessages,
         { text: message, sender: "user" },
       ]);
+      
+      try {
+        const response = await axios.post("http://localhost:5000/send-message", { message });
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          { text: response.data.response.message || "Response received", sender: "server" },
+        ]);
+      } catch (error) {
+        console.error("Error sending message:", error);
+      }
+      
       setMessage("");
     }
   };

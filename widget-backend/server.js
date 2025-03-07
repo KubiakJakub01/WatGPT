@@ -1,34 +1,34 @@
-const express = require("express");
-const WebSocket = require("ws");
-const http = require("http");
+require('dotenv').config();
+const express = require('express');
+const axios = require('axios');
+const cors = require('cors');
 
 const app = express();
+const port = process.env.PORT || 5000;
+const targetUrl = process.env.TARGET_URL || 'http://localhost:8000/';
 
-const server = http.createServer(app);
+app.use(express.json());
 
-const wss = new WebSocket.Server({ server });
+app.use(cors());
+app.use(express.json());
 
-const getRandomResponse = () => {
-  const responses = ["yes", "no", "I don't know"];
-  const randomIndex = Math.floor(Math.random() * responses.length);
-  return responses[randomIndex];
-};
+app.post('/send-message', async (req, res) => {
+    const { message } = req.body;
 
-wss.on("connection", (ws) => {
-  console.log("New client connected");
+    if (!message) {
+        return res.status(400).json({ error: 'No message in request' });
+    }
 
-  ws.on("message", (message) => {
-    console.log(`Received: ${message}`);
-
-    const response = getRandomResponse();
-    ws.send(response);
-  });
-
-  ws.on("close", () => {
-    console.log("Client disconnected");
-  });
+    try {
+        // const response = await axios.post(targetUrl, { message });
+        // res.json({ success: true, response: response.data });
+        res.json({success: true, response: { message: 'xd' } })
+    } catch (error) {
+        console.error("error sending message:", error.message);
+        res.status(500).json({ error: 'error sending message' });
+    }
 });
 
-server.listen(5000, () => {
-  console.log("Server is listening on port 5000");
+app.listen(port, () => {
+    console.log(`Server listen on port: ${port}`);
 });
