@@ -50,10 +50,12 @@ def main(spider_name: str):
         log_info(
             f"Running spider '{spider_name}' with target groups '{TARGET_GROUPS}' via {script_path}"
         )
-        subprocess.run([str(script_path), spider_name, TARGET_GROUPS], check=True)
-    elif spider_name:
+        with subprocess.Popen([str(script_path), 'both', TARGET_GROUPS]) as process:
+            process.wait()
+    elif spider_name.lower() == 'all_files':
         log_info(f"Running spider '{spider_name}' via {script_path}")
-        subprocess.run([str(script_path), spider_name], check=True)
+        with subprocess.Popen([str(script_path), 'both', TARGET_GROUPS]) as process:
+            process.wait()
     else:
         # If no spider specified, pass a keyword "both" and the target groups for timetable.
         log_info(
@@ -62,7 +64,8 @@ def main(spider_name: str):
             spiders with target groups '{TARGET_GROUPS}'.
             """
         )
-        subprocess.run([str(script_path), 'both', TARGET_GROUPS], check=True)
+        with subprocess.Popen([str(script_path), 'both', TARGET_GROUPS]) as process:
+            process.wait()
 
     create_marker_file('scrape.done')
 
