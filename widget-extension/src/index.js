@@ -1,5 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { Provider } from "react-redux";
+import store from "./store/store";
 import Widget from "./components/Widget";
 
 if (!document.getElementById("chat-widget-root")) {
@@ -13,5 +15,9 @@ if (!document.getElementById("chat-widget-root")) {
   rootElement.style.zIndex = "1000";
 
   const root = ReactDOM.createRoot(rootElement);
-  root.render(<Widget />);
+  root.render(
+    <Provider store={store}>
+      <Widget />
+    </Provider>
+  );
 }

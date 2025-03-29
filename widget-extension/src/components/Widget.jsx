@@ -1,37 +1,24 @@
-import React, { useState, useEffect } from "react";
-import { Paper } from "@mui/material";
-import { Chat } from './Chat'
-import { ToggleButton } from './ToggleButton'
+import React from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { toggleWidget } from "../store/widgetSlice";
+import ChatIcon from "./ChatIcon";
+import ChatWindow from "./ChatWindow";
 
 const Widget = () => {
-  const [isOpen, setIsOpen] = useState(() => {
-    return JSON.parse(localStorage.getItem("chatWidgetIsOpen")) ?? true;
-  });
-
-  useEffect(() => {
-    localStorage.setItem("chatWidgetIsOpen", JSON.stringify(isOpen));
-  }, [isOpen]);
+  const dispatch = useDispatch();
+  const widgetOpen = useSelector((state) => state.widget.widgetOpen);
 
   return (
-    <Paper
-      elevation={3}
-      sx={{
+    <div 
+      style={{
         position: "fixed",
         bottom: 20,
         right: 20,
-        width: isOpen ? 300 : 50,
-        height: isOpen ? 400 : 50,
-        borderRadius: isOpen ? '10%' : "50%",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        transition: "all 0.3s ease-in-out",
-        overflow: "hidden",
       }}
     >
-      <ToggleButton isOpen={isOpen} toggle={() => setIsOpen(!isOpen)} />
-      {isOpen && <Chat />}
-    </Paper>
+      {!widgetOpen && <ChatIcon toggle={() => dispatch(toggleWidget())} />}
+      {widgetOpen && <ChatWindow toggle={() => dispatch(toggleWidget())} />}
+    </div>
   );
 };
 

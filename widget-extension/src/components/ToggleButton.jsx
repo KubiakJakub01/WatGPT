@@ -8,10 +8,12 @@ export const ToggleButton = ({ isOpen, toggle }) => {
       <IconButton
         onClick={toggle}
         sx={{
-          position: "absolute",
-          top: 10,
-          right: 10,
-          backgroundColor: "transparent",
+          display: 'flex',
+          flexDirection: 'row',
+          justifyContent: 'flex-end',
+          margin: isOpen ? '' : 'auto',
+          width: isOpen ? '40px' : 'auto',
+          marginTop: isOpen ? '0' : '5px'
         }}
       >
         {isOpen ? <CloseIcon /> : <ChatBubbleOutlineIcon />}
