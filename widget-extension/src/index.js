@@ -3,6 +3,10 @@ import ReactDOM from "react-dom/client";
 import { Provider } from "react-redux";
 import store from "./store/store";
 import Widget from "./components/Widget";
+import theme from "./theme";
+import { ThemeProvider } from "@mui/material/styles";
+import CssBaseline from "@mui/material/CssBaseline";
+
 
 if (!document.getElementById("chat-widget-root")) {
   const rootElement = document.createElement("div");
@@ -17,7 +21,10 @@ if (!document.getElementById("chat-widget-root")) {
   const root = ReactDOM.createRoot(rootElement);
   root.render(
     <Provider store={store}>
-      <Widget />
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <Widget />
+      </ThemeProvider>
     </Provider>
   );
 }

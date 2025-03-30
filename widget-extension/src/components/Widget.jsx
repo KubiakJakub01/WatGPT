@@ -1,8 +1,8 @@
 import React from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { toggleWidget } from "../store/widgetSlice";
-import ChatIcon from "./ChatIcon";
-import ChatWindow from "./ChatWindow";
+import ChatIcon from "./ChatClose/ChatIcon";
+import ChatWindow from "./ChatOpen/ChatWindow";
 
 const Widget = () => {
   const dispatch = useDispatch();
@@ -17,7 +17,7 @@ const Widget = () => {
       }}
     >
       {!widgetOpen && <ChatIcon toggle={() => dispatch(toggleWidget())} />}
-      {widgetOpen && <ChatWindow toggle={() => dispatch(toggleWidget())} />}
+      {widgetOpen && <ChatWindow />}
     </div>
   );
 };
