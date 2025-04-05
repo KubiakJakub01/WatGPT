@@ -1,9 +1,25 @@
 import { Box, TextField, InputAdornment, IconButton } from "@mui/material";
-import React from "react";
+import React, { useId, useState } from "react";
 import SendIcon from "@mui/icons-material/Send";
+import { useSelector } from "react-redux";
 
 
-export const ChatInput = () => {
+export const ChatInput = ({ onSend }) => {
+    const widgetId = useSelector((state) => state.widget.widgetId);
+
+    const [inputValue, setInputValue] = useState('');
+
+    const onSendClick = () => {
+        const message = {
+            widgetId,
+            messageId:crypto.randomUUID(), 
+            text: inputValue,
+            sender: 'user'
+        }
+        onSend(message)
+        setInputValue('')
+    }
+
     return (
         <Box sx={{  
             height: '80px',
@@ -16,6 +32,8 @@ export const ChatInput = () => {
                 width: '90%'
             }}>
                 <TextField
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
                     multiline
                     rows={1}
                     variant="outlined"
@@ -48,7 +66,7 @@ export const ChatInput = () => {
                     InputProps={{
                         endAdornment: (
                             <InputAdornment position="end">
-                                <IconButton size='small' color="secondary.main">
+                                <IconButton size='small' color="secondary.main" onClick={onSendClick}>
                                     <SendIcon />
                                 </IconButton>
                             </InputAdornment>
